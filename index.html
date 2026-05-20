@@ -86,6 +86,171 @@ body {
   background: var(--border);
 }
 
+/* LOGIN OVERLAY */
+#loginOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+#loginOverlay.hidden {
+  display: none;
+}
+
+.login-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 32px;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: var(--shadow-lg);
+}
+
+.login-logo {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 32px;
+}
+
+.login-logo-icon {
+  width: 48px;
+  height: 48px;
+  background: linear-gradient(135deg, var(--rust) 0%, var(--rust-dark) 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Fraunces', serif;
+  font-size: 24px;
+  color: #fff;
+  font-weight: 800;
+  box-shadow: 0 4px 12px rgba(197, 75, 44, 0.3);
+  flex-shrink: 0;
+}
+
+.login-logo-text .brand-name {
+  font-size: 18px;
+}
+
+.login-title {
+  font-family: 'Fraunces', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--paper);
+  margin-bottom: 6px;
+}
+
+.login-subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 28px;
+}
+
+.login-form-group {
+  margin-bottom: 18px;
+}
+
+.login-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 8px;
+}
+
+.login-input {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius);
+  color: var(--paper);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+  padding: 14px 16px;
+  transition: var(--transition);
+  outline: none;
+}
+
+.login-input:focus {
+  border-color: var(--rust);
+  background: var(--charcoal);
+  box-shadow: 0 0 0 3px var(--rust-light);
+}
+
+.login-error {
+  background: var(--error-bg);
+  border: 1px solid rgba(230, 57, 70, 0.3);
+  border-radius: var(--radius);
+  color: var(--error);
+  font-size: 13px;
+  padding: 12px 16px;
+  margin-bottom: 18px;
+  display: none;
+}
+
+.login-error.visible {
+  display: block;
+}
+
+.login-btn {
+  width: 100%;
+  background: var(--rust);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-family: 'Manrope', sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  padding: 15px;
+  cursor: pointer;
+  transition: var(--transition);
+  box-shadow: 0 2px 8px rgba(197, 75, 44, 0.3);
+  margin-top: 8px;
+}
+
+.login-btn:hover {
+  background: var(--rust-dark);
+  transform: translateY(-1px);
+}
+
+.login-btn:active {
+  transform: scale(0.98);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-footer {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 12px;
+  color: var(--text-mid);
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20%       { transform: translateX(-8px); }
+  40%       { transform: translateX(8px); }
+  60%       { transform: translateX(-6px); }
+  80%       { transform: translateX(6px); }
+}
+
+.login-card.shake {
+  animation: shake 0.45s ease;
+}
+
 /* TOPBAR */
 .topbar {
   position: sticky;
@@ -1152,6 +1317,36 @@ tbody td {
 </head>
 <body>
 
+<!-- LOGIN OVERLAY -->
+<div id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">
+      <div class="login-logo-icon"><img src="rajvi.png" alt="Rajvi" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"></div>
+      <div class="login-logo-text">
+        <div class="brand-name" style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--paper);">Rajvi Travels</div>
+        <div style="font-size:11px;color:var(--rust);font-weight:600;text-transform:uppercase;letter-spacing:0.08em;">Business Portal</div>
+      </div>
+    </div>
+    <div class="login-title">Welcome back</div>
+    <div class="login-subtitle">Sign in to access the portal</div>
+
+    <div class="login-error" id="loginError">Invalid email or password. Please try again.</div>
+
+    <div class="login-form-group">
+      <label class="login-label" for="loginEmail">Email</label>
+      <input class="login-input" type="email" id="loginEmail" placeholder="Enter your email" autocomplete="username">
+    </div>
+    <div class="login-form-group">
+      <label class="login-label" for="loginPassword">Password</label>
+      <input class="login-input" type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+    </div>
+
+    <button class="login-btn" id="loginBtn">Sign In</button>
+
+    <div class="login-footer">Rajvi Travels & Transport — Internal Use Only</div>
+  </div>
+</div>
+
 <!-- LOADING OVERLAY -->
 <div class="loading-overlay" id="loadingOverlay">
   <div class="loading-spinner"></div>
@@ -1163,7 +1358,7 @@ tbody td {
 <!-- TOPBAR -->
 <div class="topbar">
   <div class="topbar-brand">
-    <div class="brand-logo">R</div>
+    <div class="brand-logo"><img src="rajvi.png" alt="Rajvi" style="width:100%;height:100%;object-fit:cover;border-radius:10px;display:block;"></div>
     <div class="brand-text">
       <div class="brand-name">Rajvi Travels</div>
       <div class="brand-sub">Transport</div>
@@ -1175,6 +1370,23 @@ tbody td {
       <span>Synced</span>
     </div>
     <div class="topbar-clock" id="topClock">--:--</div>
+    <button onclick="signOutUser()" style="
+      background: transparent;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-family: 'Manrope', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: var(--transition);
+    " onmouseover="this.style.color='var(--error)';this.style.borderColor='var(--error)'" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border-light)'">
+      <span>⏻</span> Logout
+    </button>
   </div>
 </div>
 
@@ -1844,6 +2056,67 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+// ============================================================================
+// AUTHENTICATION — Pure Frontend (no backend required)
+// ============================================================================
+const VALID_EMAIL    = 'mehul_rudra@gmail.com';
+const VALID_PASSWORD = 'R@Mrtt8188';
+
+function handleLogin() {
+  const email    = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn      = document.getElementById('loginBtn');
+  const errorEl  = document.getElementById('loginError');
+
+  errorEl.classList.remove('visible');
+  btn.disabled = true;
+  btn.textContent = 'Signing in…';
+
+  // Small delay for UX feel
+  setTimeout(() => {
+    if (email === VALID_EMAIL && password === VALID_PASSWORD) {
+      // Save session so page refresh keeps you logged in
+      sessionStorage.setItem('rtt_auth', '1');
+      document.getElementById('loginOverlay').classList.add('hidden');
+      init();
+    } else {
+      errorEl.textContent = 'Invalid email or password. Please try again.';
+      errorEl.classList.add('visible');
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
+      // Shake animation
+      document.querySelector('.login-card').classList.add('shake');
+      setTimeout(() => document.querySelector('.login-card').classList.remove('shake'), 500);
+    }
+  }, 400);
+}
+
+// Check existing session on load — boot app immediately if already authenticated
+if (sessionStorage.getItem('rtt_auth') === '1') {
+  document.getElementById('loginOverlay').classList.add('hidden');
+  // init() will be called after AppState and all functions are defined below
+  window._autoInit = true;
+} else {
+  document.getElementById('loginOverlay').classList.remove('hidden');
+  window._autoInit = false;
+}
+
+// Attach listeners
+document.getElementById('loginBtn').addEventListener('click', handleLogin);
+document.getElementById('loginPassword').addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+document.getElementById('loginEmail').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginPassword').focus();
+});
+
+// Expose sign-out globally
+window.signOutUser = function() {
+  if (confirm('Are you sure you want to logout?')) {
+    sessionStorage.removeItem('rtt_auth');
+    location.reload();
+  }
+};
 
 // Make available globally
 window.db = db;
@@ -3414,8 +3687,8 @@ async function init() {
   console.log('✅ Rajvi Portal initialized successfully');
 }
 
-// Start the app
-init();
+// Start the app — called after login OR on page load if session exists
+if (window._autoInit) init();
 </script>
 
 </body>
