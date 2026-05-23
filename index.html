@@ -1672,17 +1672,25 @@ tbody td {
       </div>
     </div>
 
-    <div class="stats-grid">
+    <div class="stats-grid" id="completedStatsGrid">
       <div class="stat-card">
         <div class="stat-value" id="statCompletedCount">0</div>
-        <div class="stat-label">Completed</div>
+        <div class="stat-label" id="statCompletedCountLabel">Total Bills</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statTotalBilling">&#x20B9;0</div>
+        <div class="stat-label">Total Billing</div>
       </div>
       <div class="stat-card">
         <div class="stat-value" id="statTotalReceived">&#x20B9;0</div>
         <div class="stat-label">Total Received</div>
       </div>
       <div class="stat-card">
-        <div class="stat-value" id="statTotalProfit">&#x20B9;0</div>
+        <div class="stat-value" id="statTotalVendor">&#x20B9;0</div>
+        <div class="stat-label">Total Vendor</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(39,174,96,0.4);">
+        <div class="stat-value" style="color:var(--success);" id="statTotalProfit">&#x20B9;0</div>
         <div class="stat-label">Net Profit</div>
       </div>
     </div>
@@ -3064,24 +3072,15 @@ window.saveVendorAmount = saveVendorAmount;
 function populateCompletedFilterYears() {
   const yearSel = document.getElementById('completedFilterYear');
   if (!yearSel) return;
-  const currentYear = new Date().getFullYear();
   const prevVal = yearSel.value;
   const years = [];
-  for (let y = 2035; y >= 2025; y--) years.push(y);
+  for (let y = 2025; y <= 2035; y++) years.push(y);
   yearSel.innerHTML = '<option value="">All Years</option>' +
     years.map(y => `<option value="${y}" ${String(y) === String(prevVal) ? 'selected' : ''}>${y}</option>`).join('');
   if (!prevVal) yearSel.value = '';
 }
 
 function applyCompletedFilter() {
-  const clearBtn = document.getElementById('completedClearFilterBtn');
-  const filterMonth = document.getElementById('completedFilterMonth')?.value;
-  const filterYear = document.getElementById('completedFilterYear')?.value;
-  if (filterMonth || filterYear) {
-    if (clearBtn) clearBtn.style.display = '';
-  } else {
-    if (clearBtn) clearBtn.style.display = 'none';
-  }
   renderCompleted();
 }
 
@@ -3102,13 +3101,6 @@ function renderCompleted() {
   // Populate year filter dropdown
   populateCompletedFilterYears();
 
-  // Update overall stats (always all records)
-  document.getElementById('statCompletedCount').textContent = completed.length;
-  const totalReceived = completed.reduce((sum, c) => sum + parseNumber(c.receivedAmount), 0);
-  const totalProfit = completed.reduce((sum, c) => sum + parseNumber(c.netProfit), 0);
-  document.getElementById('statTotalReceived').textContent = `₹${formatCurrency(totalReceived)}`;
-  document.getElementById('statTotalProfit').textContent = `₹${formatCurrency(totalProfit)}`;
-
   // Update WhatsApp record selector
   populateWhatsAppRecordSelect();
 
@@ -3121,6 +3113,26 @@ function renderCompleted() {
   let filtered = completed;
   if (filterMonth) filtered = filtered.filter(r => r.month === filterMonth);
   if (filterYear)  filtered = filtered.filter(r => String(r.year) === String(filterYear));
+
+  const isFiltered = !!(filterMonth || filterYear);
+
+  // Update stats based on filtered records
+  const statCount    = filtered.length;
+  const statBilling  = filtered.reduce((s, c) => s + parseNumber(c.amount), 0);
+  const statReceived = filtered.reduce((s, c) => s + parseNumber(c.receivedAmount), 0);
+  const statVendor   = filtered.reduce((s, c) => s + parseNumber(c.vendorAmount), 0);
+  const statProfit   = filtered.reduce((s, c) => s + parseNumber(c.netProfit), 0);
+
+  document.getElementById('statCompletedCount').textContent = statCount;
+  document.getElementById('statCompletedCountLabel').textContent = isFiltered ? 'Filtered Bills' : 'Total Bills';
+  document.getElementById('statTotalBilling').textContent  = `₹${formatCurrency(statBilling)}`;
+  document.getElementById('statTotalReceived').textContent = `₹${formatCurrency(statReceived)}`;
+  document.getElementById('statTotalVendor').textContent   = `₹${formatCurrency(statVendor)}`;
+  document.getElementById('statTotalProfit').textContent   = `₹${formatCurrency(statProfit)}`;
+
+  // Show/hide clear filter button
+  const clearBtn = document.getElementById('completedClearFilterBtn');
+  if (clearBtn) clearBtn.style.display = isFiltered ? '' : 'none';
 
   if (filtered.length === 0) {
     tbody.innerHTML = `<tr><td colspan="7" class="table-empty">${completed.length === 0 ? 'No completed records yet' : 'No records match the selected filter'}</td></tr>`;
@@ -3244,12 +3256,24 @@ function downloadCSV() {
     showToast('No records to export', 'warning');
     return;
   }
-  
+
+  const filterMonth = document.getElementById('completedFilterMonth')?.value;
+  const filterYear  = document.getElementById('completedFilterYear')?.value;
+
+  let records = AppState.completed;
+  if (filterMonth) records = records.filter(r => r.month === filterMonth);
+  if (filterYear)  records = records.filter(r => String(r.year) === String(filterYear));
+
+  if (records.length === 0) {
+    showToast('No records match the current filter', 'warning');
+    return;
+  }
+
   let csv = 'Company,Month,Year,Billing Amount,Received Amount,TDS %,TDS Amount,GST %,GST Amount,Vendor Amount,Expenses,Carry Forward,Net Profit,Completed At\n';
-  
-  AppState.completed.forEach(record => {
+
+  records.forEach(record => {
     const row = [
-      `"${record.company.replace(/"/g, '""')}"`,
+      `"${(record.company || '').replace(/"/g, '""')}"`,
       `"${record.month}"`,
       record.year,
       record.amount,
@@ -3266,20 +3290,28 @@ function downloadCSV() {
     ];
     csv += row.join(',') + '\n';
   });
-  
+
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
-  
+
+  // Build a descriptive filename
+  let filename = 'Rajvi_Records';
+  if (filterMonth && filterYear) filename = `Rajvi_${filterMonth}_${filterYear}`;
+  else if (filterMonth) filename = `Rajvi_${filterMonth}_AllYears`;
+  else if (filterYear)  filename = `Rajvi_AllMonths_${filterYear}`;
+  else filename = `Rajvi_Records_${new Date().toISOString().split('T')[0]}`;
+
   link.setAttribute('href', url);
-  link.setAttribute('download', `Rajvi_Records_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute('download', `${filename}.csv`);
   link.style.visibility = 'hidden';
-  
+
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
-  showToast('CSV file downloaded', 'success');
+
+  const label = (filterMonth || filterYear) ? `${filterMonth || 'All Months'} ${filterYear || 'All Years'}` : 'all records';
+  showToast(`CSV downloaded for ${label}`, 'success');
 }
 
 function deleteCompletedRecord(index) {
