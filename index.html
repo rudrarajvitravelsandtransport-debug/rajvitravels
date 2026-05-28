@@ -310,22 +310,41 @@ body {
   letter-spacing: 0.08em;
 }
 
-/* CHANNEL SELECTOR */
+/* CHANNEL SELECTOR ROW */
+.channel-row {
+  background: var(--slate);
+  border-bottom: 1px solid var(--border);
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.channel-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .channel-selector {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 3px;
   background: var(--graphite);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 4px 6px;
+  padding: 3px 4px;
 }
 
 .channel-btn {
-  padding: 6px 14px;
+  padding: 7px 22px;
   border-radius: 8px;
   font-family: 'Manrope', sans-serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   border: none;
@@ -333,8 +352,11 @@ body {
   color: var(--text-dim);
   transition: var(--transition);
   text-transform: uppercase;
-  letter-spacing: 0.06em;
+  letter-spacing: 0.05em;
   white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  min-height: 36px;
 }
 
 .channel-btn.active-surat {
@@ -352,15 +374,6 @@ body {
 .channel-btn:not(.active-surat):not(.active-jamnagar):hover {
   background: var(--hover);
   color: var(--paper);
-}
-
-.channel-label {
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-mid);
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  padding: 0 4px;
 }
 
 .topbar-right {
@@ -1263,6 +1276,26 @@ tbody td {
     font-size: 14px;
   }
 
+  .sync-status span {
+    display: inline;
+  }
+
+  .topbar-clock {
+    display: block;
+  }
+
+  .channel-row {
+    padding: 8px 16px;
+    justify-content: space-between;
+  }
+
+  .channel-btn {
+    padding: 8px 0;
+    width: 110px;
+    text-align: center;
+    font-size: 13px;
+  }
+
   .nav-tabs {
     padding: 0 16px;
   }
@@ -1418,12 +1451,7 @@ tbody td {
     </div>
   </div>
 
-  <!-- CHANNEL SELECTOR -->
-  <div class="channel-selector" id="channelSelector">
-    <span class="channel-label">Channel</span>
-    <button class="channel-btn active-surat" id="btnSurat" onclick="setChannel('surat')">🏙 Surat</button>
-    <button class="channel-btn" id="btnJamnagar" onclick="setChannel('jamnagar')">🌆 Jamnagar</button>
-  </div>
+  <!-- CHANNEL SELECTOR moved to its own row below -->
 
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus">
@@ -1448,6 +1476,15 @@ tbody td {
     " onmouseover="this.style.color='var(--error)';this.style.borderColor='var(--error)'" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border-light)'">
       <span>⏻</span> Logout
     </button>
+  </div>
+</div>
+
+<!-- CHANNEL ROW -->
+<div class="channel-row">
+  <span class="channel-label">📡 Channel</span>
+  <div class="channel-selector" id="channelSelector">
+    <button class="channel-btn active-surat" id="btnSurat" onclick="setChannel('surat')">🏙 Surat</button>
+    <button class="channel-btn" id="btnJamnagar" onclick="setChannel('jamnagar')">🌆 Jamnagar</button>
   </div>
 </div>
 
@@ -1490,7 +1527,7 @@ tbody td {
   letter-spacing: 0.04em;
 ">
   <span id="channelBannerIcon">🏙</span>
-  <span id="channelBannerText">Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom</span>
+  <span id="channelBannerText">Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click</span>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -2387,8 +2424,9 @@ window.AppState = {
 // CHANNEL CONFIGURATION
 // ============================================================================
 const SURAT_COMPANIES = [
-  'shivani travels', 'speedways', 'shriji', 'skil', 'sfi', 'cci',
-  'shri sai enterprises', 'manage', 'reliable', 'pais auto', 'blossom'
+  'shivani travels', 'speedways', 'shriji', 'shreeji', 'skil', 'sfi', 'cci',
+  'shri sai enterprises', 'manage', 'reliable', 'pais auto', 'blossom', 'blossom surat',
+  'surakshit', 'aurafox', 'click'
 ];
 
 function getCompanyChannel(companyName) {
@@ -2421,7 +2459,7 @@ function setChannel(channel) {
       banner.style.borderBottom = '1px solid rgba(42,157,143,0.25)';
       banner.style.color = '#2A9D8F';
       bannerIcon.textContent = '🏙';
-      bannerText.textContent = 'Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom';
+      bannerText.textContent = 'Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click';
     } else {
       banner.style.background = 'linear-gradient(90deg, rgba(197,75,44,0.12) 0%, transparent 100%)';
       banner.style.borderBottom = '1px solid rgba(197,75,44,0.25)';
