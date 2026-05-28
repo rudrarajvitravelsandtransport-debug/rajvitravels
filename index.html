@@ -1603,7 +1603,8 @@ tbody td {
       <div class="form-grid form-grid-2">
         <div class="form-group">
           <label class="form-label">Total Billing (₹)</label>
-          <input type="number" class="form-input" id="wa_billing" placeholder="0.00" step="0.01">
+          <input type="number" class="form-input" id="wa_billing" placeholder="0.00" step="0.01" oninput="const v=parseFloat(this.value)||0; const d=document.getElementById('wa_tds_display'); if(d) d.value=v>0?'₹'+formatCurrency(v*0.01)+' (1% of ₹'+formatCurrency(v)+')':'';">
+
         </div>
         <div class="form-group">
           <label class="form-label">TDS (1% of Billing) <span style="color:var(--text-mid);font-weight:400;">[Record Only]</span></label>
@@ -4083,7 +4084,7 @@ function populateWhatsAppForm() {
     document.getElementById('wa_company').value = '';
     document.getElementById('wa_period').value = '';
     document.getElementById('wa_billing').value = '';
-    document.getElementById('wa_tds_percent').value = '';
+    document.getElementById('wa_tds_display').value = '';
     document.getElementById('wa_received').value = '';
     document.getElementById('wa_deduction').value = '';
     document.getElementById('wa_cf').value = '';
@@ -4093,7 +4094,7 @@ function populateWhatsAppForm() {
     return;
   }
   
-  const record = AppState.completed[parseInt(index)];
+  const record = filterByChannel(AppState.completed)[parseInt(index)];
   if (!record) return;
   
   // Populate form fields
@@ -4162,9 +4163,10 @@ function generateWhatsAppMessage() {
     hour12: true 
   });
   
+  const officeLabel = (AppState.channel === 'jamnagar') ? 'JAMNAGAR' : 'SURAT';
   // Generate WhatsApp formatted message
   const message = `*RAJVI TRAVELS AND TRANSPORT*
-*SURAT OFFICE — PARTNER HISAB*
+*${officeLabel} OFFICE — PARTNER HISAB*
 ━━━━━━━━━━━━━━━━━━━━━
 *Bill To :* ${company.toUpperCase()}
 *Period  :* ${period}
