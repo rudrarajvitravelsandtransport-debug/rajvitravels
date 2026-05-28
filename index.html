@@ -310,6 +310,59 @@ body {
   letter-spacing: 0.08em;
 }
 
+/* CHANNEL SELECTOR */
+.channel-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--graphite);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 4px 6px;
+}
+
+.channel-btn {
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-family: 'Manrope', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  color: var(--text-dim);
+  transition: var(--transition);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.channel-btn.active-surat {
+  background: linear-gradient(135deg, #2A9D8F 0%, #1a7a70 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(42,157,143,0.35);
+}
+
+.channel-btn.active-jamnagar {
+  background: linear-gradient(135deg, var(--rust) 0%, var(--rust-dark) 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(197,75,44,0.35);
+}
+
+.channel-btn:not(.active-surat):not(.active-jamnagar):hover {
+  background: var(--hover);
+  color: var(--paper);
+}
+
+.channel-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-mid);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0 4px;
+}
+
 .topbar-right {
   display: flex;
   align-items: center;
@@ -1364,6 +1417,14 @@ tbody td {
       <div class="brand-sub">Transport</div>
     </div>
   </div>
+
+  <!-- CHANNEL SELECTOR -->
+  <div class="channel-selector" id="channelSelector">
+    <span class="channel-label">Channel</span>
+    <button class="channel-btn active-surat" id="btnSurat" onclick="setChannel('surat')">🏙 Surat</button>
+    <button class="channel-btn" id="btnJamnagar" onclick="setChannel('jamnagar')">🌆 Jamnagar</button>
+  </div>
+
   <div class="topbar-right">
     <div class="sync-status" id="syncStatus">
       <div class="sync-dot"></div>
@@ -1412,6 +1473,24 @@ tbody td {
   <button class="nav-tab" data-section="mail" onclick="switchTab('mail')">
     ✉️ Mail
   </button>
+</div>
+
+<!-- CHANNEL BANNER -->
+<div id="channelBanner" style="
+  background: linear-gradient(90deg, rgba(42,157,143,0.15) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(42,157,143,0.25);
+  padding: 6px 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  font-family: 'Manrope', sans-serif;
+  font-weight: 600;
+  color: #2A9D8F;
+  letter-spacing: 0.04em;
+">
+  <span id="channelBannerIcon">🏙</span>
+  <span id="channelBannerText">Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom</span>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -1677,6 +1756,10 @@ tbody td {
         <div class="stat-value" id="statCompletedCount">0</div>
         <div class="stat-label" id="statCompletedCountLabel">Total Bills</div>
       </div>
+      <div class="stat-card" style="border-color:rgba(42,157,143,0.4);">
+        <div class="stat-value" style="color:var(--info);" id="statCompletedDuties">0</div>
+        <div class="stat-label">Total Duties</div>
+      </div>
       <div class="stat-card">
         <div class="stat-value" id="statTotalBilling">&#x20B9;0</div>
         <div class="stat-label">Total Billing</div>
@@ -1721,6 +1804,14 @@ tbody td {
       </div>
     </div>
 
+    <!-- Month-wise Duties Summary for Completed Bills -->
+    <div class="card" id="completedDutiesMonthCard" style="display:none;margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><span class="card-icon">📦</span> Duties — Month-wise (Completed Bills)</div>
+      </div>
+      <div id="completedDutiesMonthBody"></div>
+    </div>
+
     <div class="card">
       <div class="table-wrap">
         <table>
@@ -1729,6 +1820,7 @@ tbody td {
               <th>Company</th>
               <th>Month</th>
               <th>Billing</th>
+              <th>Duties</th>
               <th>Received</th>
               <th>Net Profit</th>
               <th>Completed</th>
@@ -1737,7 +1829,7 @@ tbody td {
           </thead>
           <tbody id="completedTableBody">
             <tr>
-              <td colspan="7" class="table-empty">No completed records</td>
+              <td colspan="8" class="table-empty">No completed records</td>
             </tr>
           </tbody>
         </table>
@@ -1786,6 +1878,10 @@ tbody td {
         <div class="stat-value" id="mpStatBills">0</div>
         <div class="stat-label">Cleared Bills</div>
       </div>
+      <div class="stat-card" style="border-color:rgba(42,157,143,0.4);">
+        <div class="stat-value" style="color:var(--info);" id="mpStatDuties">0</div>
+        <div class="stat-label">Total Duties</div>
+      </div>
       <div class="stat-card">
         <div class="stat-value" id="mpStatBilling">₹0</div>
         <div class="stat-label">Total Billing</div>
@@ -1824,6 +1920,7 @@ tbody td {
           <thead>
             <tr>
               <th>Company</th>
+              <th>Duties</th>
               <th>Billing</th>
               <th>TDS % (Record)</th>
               <th>TDS Amt</th>
@@ -2282,11 +2379,70 @@ window.AppState = {
   bills: [],
   awaiting: [],
   completed: [],
-  currentBillId: null
+  currentBillId: null,
+  currentChannel: 'surat'
 };
 
 // ============================================================================
-// UTILITY FUNCTIONS
+// CHANNEL CONFIGURATION
+// ============================================================================
+const SURAT_COMPANIES = [
+  'shivani travels', 'speedways', 'shriji', 'skil', 'sfi', 'cci',
+  'shri sai enterprises', 'manage', 'reliable', 'pais auto', 'blossom'
+];
+
+function getCompanyChannel(companyName) {
+  if (!companyName) return 'jamnagar';
+  const lower = companyName.trim().toLowerCase();
+  return SURAT_COMPANIES.some(sc => lower === sc || lower.startsWith(sc)) ? 'surat' : 'jamnagar';
+}
+
+function filterByChannel(records) {
+  return records.filter(r => getCompanyChannel(r.company) === AppState.currentChannel);
+}
+
+function setChannel(channel) {
+  AppState.currentChannel = channel;
+  // Update button styles
+  const btnS = document.getElementById('btnSurat');
+  const btnJ = document.getElementById('btnJamnagar');
+  btnS.className = 'channel-btn' + (channel === 'surat' ? ' active-surat' : '');
+  btnJ.className = 'channel-btn' + (channel === 'jamnagar' ? ' active-jamnagar' : '');
+  // Update subtitle badge in topbar
+  const brandSub = document.querySelector('.brand-sub');
+  if (brandSub) brandSub.textContent = channel === 'surat' ? 'Surat Channel' : 'Jamnagar Channel';
+  // Update channel banner
+  const banner = document.getElementById('channelBanner');
+  const bannerIcon = document.getElementById('channelBannerIcon');
+  const bannerText = document.getElementById('channelBannerText');
+  if (banner && bannerIcon && bannerText) {
+    if (channel === 'surat') {
+      banner.style.background = 'linear-gradient(90deg, rgba(42,157,143,0.15) 0%, transparent 100%)';
+      banner.style.borderBottom = '1px solid rgba(42,157,143,0.25)';
+      banner.style.color = '#2A9D8F';
+      bannerIcon.textContent = '🏙';
+      bannerText.textContent = 'Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom';
+    } else {
+      banner.style.background = 'linear-gradient(90deg, rgba(197,75,44,0.12) 0%, transparent 100%)';
+      banner.style.borderBottom = '1px solid rgba(197,75,44,0.25)';
+      banner.style.color = 'var(--rust)';
+      bannerIcon.textContent = '🌆';
+      bannerText.textContent = 'Viewing: JAMNAGAR CHANNEL — All companies not in Surat channel';
+    }
+  }
+  // Re-render all sections
+  renderBills();
+  renderAwaiting();
+  renderCompleted();
+  if (document.getElementById('mpYear')?.value) renderMonthProfit();
+  populateMailCompanies();
+  populateWhatsAppRecordSelect();
+  updateBadges();
+  showToast(`Switched to ${channel === 'surat' ? 'Surat' : 'Jamnagar'} channel`, 'info');
+}
+
+window.setChannel = setChannel;
+
 // ============================================================================
 
 // Format number as currency
@@ -2539,7 +2695,8 @@ window.savePartners = savePartners;
 // ============================================================================
 function renderBills() {
   const tbody = document.getElementById('billsTableBody');
-  const bills = AppState.bills.filter(b => b.status === 'pending');
+  const allPending = AppState.bills.filter(b => b.status === 'pending');
+  const bills = filterByChannel(allPending);
   
   // Update stats
   document.getElementById('statPendingBills').textContent = bills.length;
@@ -2550,23 +2707,27 @@ function renderBills() {
   const totalVendor = bills.reduce((sum, b) => sum + parseNumber(b.vendorAmount), 0);
   document.getElementById('statBillVendorTotal').textContent = `₹${formatCurrency(totalVendor)}`;
 
-  // Month-wise vendor breakdown
+  // Month-wise breakdown with duties
   const monthCard = document.getElementById('billVendorMonthCard');
   const monthBody = document.getElementById('billVendorMonthBody');
   const monthMap = {};
   bills.forEach(b => {
-    if (parseNumber(b.vendorAmount) > 0) {
-      const key = `${b.month} ${b.year}`;
-      if (!monthMap[key]) monthMap[key] = { count: 0, vendor: 0 };
-      monthMap[key].count++;
-      monthMap[key].vendor += parseNumber(b.vendorAmount);
-    }
+    const key = `${b.month} ${b.year}`;
+    if (!monthMap[key]) monthMap[key] = { count: 0, vendor: 0, duties: 0 };
+    monthMap[key].count++;
+    monthMap[key].duties += parseInt(b.duties) || 0;
+    if (parseNumber(b.vendorAmount) > 0) monthMap[key].vendor += parseNumber(b.vendorAmount);
   });
   const monthKeys = Object.keys(monthMap);
   if (monthKeys.length > 0) {
     monthCard.style.display = 'block';
-    monthBody.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Month</th><th>Bills with Vendor</th><th>Total Vendor Amount</th></tr></thead><tbody>
-      ${monthKeys.map(k => `<tr><td>${k}</td><td class="text-center">${monthMap[k].count}</td><td class="mono" style="color:var(--warning);">₹${formatCurrency(monthMap[k].vendor)}</td></tr>`).join('')}
+    monthBody.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Month</th><th>Bills</th><th>Total Duties</th><th>Total Vendor Amount</th></tr></thead><tbody>
+      ${monthKeys.map(k => `<tr>
+        <td>${k}</td>
+        <td class="text-center">${monthMap[k].count}</td>
+        <td class="text-center" style="color:var(--info);font-weight:700;">${monthMap[k].duties}</td>
+        <td class="mono" style="color:var(--warning);">${monthMap[k].vendor > 0 ? '₹' + formatCurrency(monthMap[k].vendor) : '—'}</td>
+      </tr>`).join('')}
     </tbody></table></div>`;
   } else {
     monthCard.style.display = 'none';
@@ -2574,8 +2735,9 @@ function renderBills() {
 
   // Update badge
   const badge = document.getElementById('billsBadge');
-  if (bills.length > 0) {
-    badge.textContent = bills.length;
+  const channelPendingCount = bills.length;
+  if (channelPendingCount > 0) {
+    badge.textContent = channelPendingCount;
     badge.style.display = 'inline';
   } else {
     badge.style.display = 'none';
@@ -2734,7 +2896,8 @@ window.showBillDetail = showBillDetail;
 // ============================================================================
 function renderAwaiting() {
   const tbody = document.getElementById('awaitingTableBody');
-  const awaiting = AppState.awaiting;
+  const allAwaiting = AppState.awaiting;
+  const awaiting = filterByChannel(allAwaiting);
   
   // Update stats
   document.getElementById('statAwaitingCount').textContent = awaiting.length;
@@ -2745,26 +2908,28 @@ function renderAwaiting() {
   const totalVendor = awaiting.reduce((sum, b) => sum + parseNumber(b.vendorAmount), 0);
   document.getElementById('statAwaitingVendorTotal').textContent = `₹${formatCurrency(totalVendor)}`;
 
-  // Month-wise vendor breakdown
+  // Month-wise breakdown with duties
   const monthCard = document.getElementById('awaitingVendorMonthCard');
   const monthBody = document.getElementById('awaitingVendorMonthBody');
   const monthMap = {};
   awaiting.forEach(b => {
     const key = `${b.month} ${b.year}`;
-    if (!monthMap[key]) monthMap[key] = { count: 0, vendor: 0, billing: 0 };
+    if (!monthMap[key]) monthMap[key] = { count: 0, vendor: 0, billing: 0, duties: 0 };
     monthMap[key].count++;
     monthMap[key].billing += parseNumber(b.amount);
     monthMap[key].vendor += parseNumber(b.vendorAmount);
+    monthMap[key].duties += parseInt(b.duties) || 0;
   });
   const monthKeys = Object.keys(monthMap);
   if (monthKeys.length > 0) {
     monthCard.style.display = 'block';
-    monthBody.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Month</th><th>Bills</th><th>Expected Amount</th><th>Vendor Amount</th></tr></thead><tbody>
+    monthBody.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Month</th><th>Bills</th><th>Total Duties</th><th>Expected Amount</th><th>Vendor Amount</th></tr></thead><tbody>
       ${monthKeys.map(k => `<tr>
         <td>${k}</td>
         <td class="text-center">${monthMap[k].count}</td>
+        <td class="text-center" style="color:var(--info);font-weight:700;">${monthMap[k].duties}</td>
         <td class="mono">₹${formatCurrency(monthMap[k].billing)}</td>
-        <td class="mono" style="color:var(--warning);">₹${formatCurrency(monthMap[k].vendor)}</td>
+        <td class="mono" style="color:var(--warning);">${monthMap[k].vendor > 0 ? '₹' + formatCurrency(monthMap[k].vendor) : '—'}</td>
       </tr>`).join('')}
     </tbody></table></div>`;
   } else {
@@ -3096,7 +3261,7 @@ function clearCompletedFilter() {
 
 function renderCompleted() {
   const tbody = document.getElementById('completedTableBody');
-  const completed = AppState.completed;
+  const completed = filterByChannel(AppState.completed);
 
   // Populate year filter dropdown
   populateCompletedFilterYears();
@@ -3130,12 +3295,52 @@ function renderCompleted() {
   document.getElementById('statTotalVendor').textContent   = `₹${formatCurrency(statVendor)}`;
   document.getElementById('statTotalProfit').textContent   = `₹${formatCurrency(statProfit)}`;
 
+  // Duties stat
+  const statDuties = filtered.reduce((s, c) => s + (parseInt(c.duties) || 0), 0);
+  const dutiesEl = document.getElementById('statCompletedDuties');
+  if (dutiesEl) dutiesEl.textContent = statDuties;
+
+  // Month-wise duties breakdown for completed bills
+  const dutiesMonthCard = document.getElementById('completedDutiesMonthCard');
+  const dutiesMonthBody = document.getElementById('completedDutiesMonthBody');
+  if (dutiesMonthCard && dutiesMonthBody) {
+    const dMap = {};
+    filtered.forEach(c => {
+      const key = `${c.month} ${c.year}`;
+      if (!dMap[key]) dMap[key] = { count: 0, duties: 0, billing: 0, received: 0, profit: 0 };
+      dMap[key].count++;
+      dMap[key].duties   += parseInt(c.duties) || 0;
+      dMap[key].billing  += parseNumber(c.amount);
+      dMap[key].received += parseNumber(c.receivedAmount);
+      dMap[key].profit   += parseNumber(c.netProfit);
+    });
+    const dKeys = Object.keys(dMap);
+    if (dKeys.length > 0) {
+      dutiesMonthCard.style.display = 'block';
+      dutiesMonthBody.innerHTML = `<div class="table-wrap"><table>
+        <thead><tr><th>Month</th><th>Bills</th><th>Total Duties</th><th>Billing</th><th>Received</th><th>Net Profit</th></tr></thead>
+        <tbody>
+          ${dKeys.map(k => `<tr>
+            <td>${k}</td>
+            <td class="text-center">${dMap[k].count}</td>
+            <td class="text-center" style="color:var(--info);font-weight:700;font-size:15px;">${dMap[k].duties}</td>
+            <td class="mono">₹${formatCurrency(dMap[k].billing)}</td>
+            <td class="mono text-success">₹${formatCurrency(dMap[k].received)}</td>
+            <td class="mono text-rust">₹${formatCurrency(dMap[k].profit)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table></div>`;
+    } else {
+      dutiesMonthCard.style.display = 'none';
+    }
+  }
+
   // Show/hide clear filter button
   const clearBtn = document.getElementById('completedClearFilterBtn');
   if (clearBtn) clearBtn.style.display = isFiltered ? '' : 'none';
 
   if (filtered.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" class="table-empty">${completed.length === 0 ? 'No completed records yet' : 'No records match the selected filter'}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="table-empty">${completed.length === 0 ? 'No completed records yet' : 'No records match the selected filter'}</td></tr>`;
     return;
   }
 
@@ -3146,6 +3351,7 @@ function renderCompleted() {
       <td><strong>${escapeHtml(record.company)}</strong></td>
       <td>${escapeHtml(record.month)} ${record.year}</td>
       <td class="mono">₹${formatCurrency(record.amount)}</td>
+      <td class="text-center" style="color:var(--info);font-weight:700;">${record.duties || '—'}</td>
       <td class="mono text-success">₹${formatCurrency(record.receivedAmount)}</td>
       <td class="mono text-rust">₹${formatCurrency(record.netProfit)}</td>
       <td class="text-dim" style="font-size: 12px;">${record.completedAt}</td>
@@ -3510,9 +3716,9 @@ window.saveEditCompleted = saveEditCompleted;
 function populateMailCompanies() {
   const select = document.getElementById('mailCompany');
   const companies = [...new Set([
-    ...AppState.bills.map(b => b.company),
-    ...AppState.awaiting.map(b => b.company),
-    ...AppState.completed.map(c => c.company)
+    ...filterByChannel(AppState.bills).map(b => b.company),
+    ...filterByChannel(AppState.awaiting).map(b => b.company),
+    ...filterByChannel(AppState.completed).map(c => c.company)
   ])].sort();
   
   select.innerHTML = '<option value="">Select Company</option>' +
@@ -3691,8 +3897,8 @@ function updateSyncStatus(status) {
 }
 
 function updateBadges() {
-  const pendingCount = AppState.bills.filter(b => b.status === 'pending').length;
-  const awaitingCount = AppState.awaiting.length;
+  const pendingCount = filterByChannel(AppState.bills.filter(b => b.status === 'pending')).length;
+  const awaitingCount = filterByChannel(AppState.awaiting).length;
   
   const billsBadge = document.getElementById('billsBadge');
   if (pendingCount > 0) {
@@ -3719,7 +3925,7 @@ window.loadData = loadData;
 // ============================================================================
 function populateWhatsAppRecordSelect() {
   const select = document.getElementById('whatsappRecordSelect');
-  const completed = AppState.completed;
+  const completed = filterByChannel(AppState.completed);
   
   select.innerHTML = '<option value="">Select a completed transaction</option>';
   
@@ -3926,7 +4132,7 @@ function renderMonthProfit() {
   const year = document.getElementById('mpYear')?.value;
   if (!month || !year) return;
 
-  const records = AppState.completed.filter(r => r.month === month && String(r.year) === String(year));
+  const records = filterByChannel(AppState.completed).filter(r => r.month === month && String(r.year) === String(year));
 
   const statsGrid = document.getElementById('mpStatsGrid');
   const billsCard = document.getElementById('mpBillsCard');
@@ -3959,6 +4165,9 @@ function renderMonthProfit() {
   document.getElementById('mpStatBilling').textContent  = `₹${formatCurrency(totalBilling)}`;
   document.getElementById('mpStatReceived').textContent = `₹${formatCurrency(totalReceived)}`;
   document.getElementById('mpStatProfit').textContent   = `₹${formatCurrency(totalProfit)}`;
+  const totalDuties = records.reduce((s, r) => s + (parseInt(r.duties) || 0), 0);
+  const mpStatDuties = document.getElementById('mpStatDuties');
+  if (mpStatDuties) mpStatDuties.textContent = totalDuties;
 
   // Per-company summary cards
   const compMap = {};
@@ -4028,6 +4237,7 @@ function renderMonthProfit() {
     return `
     <tr onclick="showCompletedDetail(${AppState.completed.indexOf(r)})" style="cursor:pointer;">
       <td><strong>${escapeHtml(r.company)}</strong></td>
+      <td class="text-center" style="color:var(--info);font-weight:700;">${r.duties || '—'}</td>
       <td class="mono">₹${formatCurrency(r.amount)}</td>
       <td class="mono" style="color:var(--text-dim);">${tPct}%</td>
       <td class="mono" style="color:var(--text-dim);">₹${formatCurrency(tAmt)}</td>
@@ -4046,9 +4256,9 @@ let _mpChartInstance = null;
 function renderMonthProfitChart() {
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-  // Build a map of "Month Year" → total net profit from ALL completed records
+  // Build a map of "Month Year" → total net profit from channel-filtered completed records
   const profitMap = {};
-  AppState.completed.forEach(r => {
+  filterByChannel(AppState.completed).forEach(r => {
     const key = `${r.month} ${r.year}`;
     profitMap[key] = (profitMap[key] || 0) + parseNumber(r.netProfit);
   });
