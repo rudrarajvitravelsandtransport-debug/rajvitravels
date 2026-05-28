@@ -2660,6 +2660,7 @@ function switchTab(sectionName) {
   if (sectionName === 'bills') renderBills();
   if (sectionName === 'awaiting') renderAwaiting();
   if (sectionName === 'completed') renderCompleted();
+  if (sectionName === 'monthprofit') renderMonthProfit();
 }
 
 window.switchTab = switchTab;
@@ -2898,6 +2899,7 @@ function createBill() {
       closeModal('newBillModal');
       document.getElementById('newBillForm').reset();
       document.getElementById('billYear').value = new Date().getFullYear();
+      document.getElementById('billMonth').value = new Date().toLocaleString('en-IN', { month: 'long' });
       renderBills();
     })
     .catch(error => {
@@ -3953,18 +3955,28 @@ window.copyEmail = copyEmail;
 // ============================================================================
 async function saveData() {
   try {
-    // Save to localStorage
-    localStorage.setItem('rajvi_portal_data', JSON.stringify(AppState));
-    
+    updateSyncStatus('syncing');
+
+    // Only persist the 4 data arrays — never transient UI state
+    const payload = {
+      partners:  AppState.partners,
+      bills:     AppState.bills,
+      awaiting:  AppState.awaiting,
+      completed: AppState.completed
+    };
+
+    // Save to localStorage as a backup
+    localStorage.setItem('rajvi_portal_data', JSON.stringify(payload));
+
     // Save to Firebase
     await firebaseUtils.setDoc(
       firebaseUtils.doc(db, 'portal', 'main'),
       {
-        ...AppState,
+        ...payload,
         lastUpdated: firebaseUtils.serverTimestamp()
       }
     );
-    
+
     updateSyncStatus('synced');
     return true;
   } catch (error) {
@@ -4169,7 +4181,7 @@ function generateWhatsAppMessage() {
     hour12: true 
   });
   
-  const officeLabel = (AppState.channel === 'jamnagar') ? 'JAMNAGAR' : 'SURAT';
+  const officeLabel = (AppState.currentChannel === 'jamnagar') ? 'JAMNAGAR' : 'SURAT';
   // Generate WhatsApp formatted message
   const message = `*RAJVI TRAVELS AND TRANSPORT*
 *${officeLabel} OFFICE — PARTNER HISAB*
@@ -4196,7 +4208,7 @@ function generateWhatsAppMessage() {
 🤝 *PARTNER SHARE*
 ${partnerLines}
 ━━━━━━━━━━━━━━━━━━━━━
-_Internal record — Rajvi T&T Surat_`;
+_Internal record — Rajvi T&T ${officeLabel}_`;
 
   // Display preview
   document.getElementById('whatsappMessagePreview').textContent = message;
