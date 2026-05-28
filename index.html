@@ -1527,7 +1527,7 @@ tbody td {
   letter-spacing: 0.04em;
 ">
   <span id="channelBannerIcon">🏙</span>
-  <span id="channelBannerText">Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click</span>
+  <span id="channelBannerText">Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click, Anateus</span>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -2471,12 +2471,18 @@ window.AppState = {
 const SURAT_COMPANIES = [
   'shivani travels', 'speedways', 'shriji', 'shreeji', 'skil', 'sfi', 'cci',
   'shri sai enterprises', 'manage', 'reliable', 'pais auto', 'blossom', 'blossom surat',
-  'surakshit', 'aurafox', 'click'
+  'surakshit', 'aurafox', 'click', 'anateus'
+];
+
+// Companies that belong to Jamnagar even if they partially match a Surat name
+const JAMNAGAR_EXCEPTIONS = [
+  'blossom services jamnagar'
 ];
 
 function getCompanyChannel(companyName) {
   if (!companyName) return 'jamnagar';
   const lower = companyName.trim().toLowerCase();
+  if (JAMNAGAR_EXCEPTIONS.some(jc => lower === jc || lower.startsWith(jc))) return 'jamnagar';
   return SURAT_COMPANIES.some(sc => lower === sc || lower.startsWith(sc)) ? 'surat' : 'jamnagar';
 }
 
@@ -2504,13 +2510,13 @@ function setChannel(channel) {
       banner.style.borderBottom = '1px solid rgba(42,157,143,0.25)';
       banner.style.color = '#2A9D8F';
       bannerIcon.textContent = '🏙';
-      bannerText.textContent = 'Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click';
+      bannerText.textContent = 'Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click, Anateus';
     } else {
       banner.style.background = 'linear-gradient(90deg, rgba(197,75,44,0.12) 0%, transparent 100%)';
       banner.style.borderBottom = '1px solid rgba(197,75,44,0.25)';
       banner.style.color = 'var(--rust)';
       bannerIcon.textContent = '🌆';
-      bannerText.textContent = 'Viewing: JAMNAGAR CHANNEL — All companies not in Surat channel';
+      bannerText.textContent = 'Viewing: JAMNAGAR CHANNEL — Blossom Services Jamnagar & all companies not in Surat channel';
     }
   }
   // Re-render all sections
