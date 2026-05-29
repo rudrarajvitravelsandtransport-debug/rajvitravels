@@ -2234,7 +2234,7 @@ tbody td {
   <div class="modal">
     <div class="modal-header">
       <h2 class="modal-title">✏️ Edit Completed Record</h2>
-      <button class="modal-close" onclick="closeModal('editCompletedModal')">×</button>
+      <button class="modal-close" onclick="AppState._pendingSwap = null; closeModal('editCompletedModal')">×</button>
     </div>
     <div class="modal-body">
       <div id="editCompletedContent">
@@ -2342,7 +2342,7 @@ tbody td {
       </div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('editCompletedModal')">Cancel</button>
+      <button class="btn btn-ghost" onclick="AppState._pendingSwap = null; closeModal('editCompletedModal')">Cancel</button>
       <button class="btn btn-primary" onclick="saveEditCompleted()">💾 Save Changes</button>
     </div>
   </div>
@@ -2462,7 +2462,9 @@ window.AppState = {
   awaiting: [],
   completed: [],
   currentBillId: null,
-  currentChannel: 'surat'
+  currentChannel: 'surat',
+  extraSuratCompanies: [],   // companies moved to Surat at runtime (persisted)
+  jamnagarExceptions: []     // companies moved to Jamnagar at runtime (persisted)
 };
 
 // ============================================================================
@@ -2482,8 +2484,20 @@ const JAMNAGAR_EXCEPTIONS = [
 function getCompanyChannel(companyName) {
   if (!companyName) return 'jamnagar';
   const lower = companyName.trim().toLowerCase();
-  if (JAMNAGAR_EXCEPTIONS.some(jc => lower === jc || lower.startsWith(jc))) return 'jamnagar';
-  return SURAT_COMPANIES.some(sc => lower === sc || lower.startsWith(sc)) ? 'surat' : 'jamnagar';
+
+  // Check runtime Jamnagar exceptions first (AppState overrides + static list)
+  const allJamnagarExceptions = [
+    ...JAMNAGAR_EXCEPTIONS,
+    ...(AppState.jamnagarExceptions || [])
+  ];
+  if (allJamnagarExceptions.some(jc => lower === jc || lower.startsWith(jc))) return 'jamnagar';
+
+  // Check Surat companies (static list + runtime additions)
+  const allSuratCompanies = [
+    ...SURAT_COMPANIES,
+    ...(AppState.extraSuratCompanies || [])
+  ];
+  return allSuratCompanies.some(sc => lower === sc || lower.startsWith(sc)) ? 'surat' : 'jamnagar';
 }
 
 function filterByChannel(records) {
@@ -2660,7 +2674,6 @@ function switchTab(sectionName) {
   if (sectionName === 'bills') renderBills();
   if (sectionName === 'awaiting') renderAwaiting();
   if (sectionName === 'completed') renderCompleted();
-  if (sectionName === 'monthprofit') renderMonthProfit();
 }
 
 window.switchTab = switchTab;
@@ -2899,7 +2912,6 @@ function createBill() {
       closeModal('newBillModal');
       document.getElementById('newBillForm').reset();
       document.getElementById('billYear').value = new Date().getFullYear();
-      document.getElementById('billMonth').value = new Date().toLocaleString('en-IN', { month: 'long' });
       renderBills();
     })
     .catch(error => {
@@ -3652,6 +3664,7 @@ function openEditCompleted(index) {
   const record = AppState.completed[index];
   if (!record) return;
   AppState.editCompletedIndex = index;
+  AppState._pendingSwap = null; // Clear any previous pending swap
 
   document.getElementById('ec_company').value = record.company || '';
   document.getElementById('ec_month').value = record.month || 'January';
@@ -3670,55 +3683,77 @@ function openEditCompleted(index) {
 }
 
 function updateEditChannelBadge() {
-  const company = document.getElementById('ec_company')?.value || '';
-  const ch = getCompanyChannel(company);
+  const company = document.getElementById('ec_company')?.value?.trim() || '';
+  const lower = company.toLowerCase();
+
+  // If there's a pending swap for this exact company, show the target channel
+  let ch;
+  if (AppState._pendingSwap && AppState._pendingSwap.company === lower) {
+    ch = AppState._pendingSwap.targetChannel;
+  } else {
+    ch = getCompanyChannel(company);
+  }
+
+  _updateEditChannelBadgeWithChannel(ch);
+}
+
+// Pending swap: { company: string, targetChannel: 'surat'|'jamnagar' } — committed only on Save
+AppState._pendingSwap = null;
+
+function swapEditChannel() {
+  const companyInput = document.getElementById('ec_company');
+  const company = companyInput?.value?.trim() || '';
+  if (!company) { showToast('Company name is required', 'warning'); return; }
+
+  const lower = company.toLowerCase();
+
+  // Determine effective current channel (account for pending swap)
+  let effectiveCh;
+  if (AppState._pendingSwap && AppState._pendingSwap.company === lower) {
+    effectiveCh = AppState._pendingSwap.targetChannel;
+  } else {
+    effectiveCh = getCompanyChannel(company);
+  }
+
+  if (effectiveCh === 'surat') {
+    // Intent: move to Jamnagar
+    AppState._pendingSwap = { company: lower, targetChannel: 'jamnagar' };
+    showToast(`"${company}" will move to Jamnagar on save`, 'info');
+  } else {
+    // Intent: move to Surat
+    AppState._pendingSwap = { company: lower, targetChannel: 'surat' };
+    showToast(`"${company}" will move to Surat on save`, 'info');
+  }
+
+  // Update badge to reflect pending intent
+  _updateEditChannelBadgeWithChannel(effectiveCh === 'surat' ? 'jamnagar' : 'surat');
+}
+
+function _updateEditChannelBadgeWithChannel(ch) {
   const badge = document.getElementById('ec_channelBadge');
   const swapLabel = document.getElementById('ec_swapLabel');
   const swapBtn = document.getElementById('ec_swapBtn');
   if (!badge || !swapLabel) return;
-
   if (ch === 'surat') {
     badge.textContent = '🏙 Surat';
     badge.style.background = 'rgba(42,157,143,0.18)';
     badge.style.color = '#2A9D8F';
     badge.style.border = '1px solid rgba(42,157,143,0.35)';
     swapLabel.textContent = 'Move to Jamnagar';
-    swapBtn.title = 'Rename company so it moves to Jamnagar channel';
+    swapBtn.title = 'Move this company to Jamnagar channel';
   } else {
     badge.textContent = '🌆 Jamnagar';
     badge.style.background = 'rgba(197,75,44,0.15)';
     badge.style.color = 'var(--rust)';
     badge.style.border = '1px solid rgba(197,75,44,0.3)';
     swapLabel.textContent = 'Move to Surat';
-    swapBtn.title = 'Add company to Surat channel list';
+    swapBtn.title = 'Move this company to Surat channel';
   }
-}
-
-function swapEditChannel() {
-  const companyInput = document.getElementById('ec_company');
-  const company = companyInput?.value?.trim() || '';
-  const ch = getCompanyChannel(company);
-
-  if (ch === 'surat') {
-    // Moving Surat → Jamnagar: append " (Jamnagar)" suffix so it no longer matches Surat list
-    const base = company.replace(/\s*\(jamnagar\)/i, '').trim();
-    companyInput.value = base + ' (Jamnagar)';
-    showToast(`"${base}" will move to Jamnagar channel on save`, 'info');
-  } else {
-    // Moving Jamnagar → Surat: add to runtime SURAT_COMPANIES and update name
-    const base = company.replace(/\s*\(jamnagar\)/i, '').trim();
-    companyInput.value = base;
-    const lower = base.toLowerCase();
-    if (!SURAT_COMPANIES.includes(lower)) {
-      SURAT_COMPANIES.push(lower);
-    }
-    showToast(`"${base}" will move to Surat channel on save`, 'info');
-  }
-  updateEditChannelBadge();
 }
 
 window.updateEditChannelBadge = updateEditChannelBadge;
 window.swapEditChannel = swapEditChannel;
+window._updateEditChannelBadgeWithChannel = _updateEditChannelBadgeWithChannel;
 
 function recalcEditCompleted() {
   const received     = parseNumber(document.getElementById('ec_received')?.value);
@@ -3817,6 +3852,28 @@ async function saveEditCompleted() {
     percentage: p.percentage,
     amount: (netProfit * p.percentage) / 100
   }));
+
+  // Commit any pending channel swap
+  if (AppState._pendingSwap) {
+    const { company: swapCompany, targetChannel } = AppState._pendingSwap;
+    if (!AppState.extraSuratCompanies) AppState.extraSuratCompanies = [];
+    if (!AppState.jamnagarExceptions) AppState.jamnagarExceptions = [];
+
+    if (targetChannel === 'jamnagar') {
+      // Add to jamnagar exceptions, remove from extra surat list
+      if (!AppState.jamnagarExceptions.includes(swapCompany)) {
+        AppState.jamnagarExceptions.push(swapCompany);
+      }
+      AppState.extraSuratCompanies = AppState.extraSuratCompanies.filter(c => c !== swapCompany);
+    } else {
+      // Add to extra surat companies, remove from jamnagar exceptions
+      if (!AppState.extraSuratCompanies.includes(swapCompany)) {
+        AppState.extraSuratCompanies.push(swapCompany);
+      }
+      AppState.jamnagarExceptions = AppState.jamnagarExceptions.filter(c => c !== swapCompany);
+    }
+    AppState._pendingSwap = null;
+  }
 
   // Update record in place — no backend structure changes
   AppState.completed[index] = {
@@ -3955,28 +4012,18 @@ window.copyEmail = copyEmail;
 // ============================================================================
 async function saveData() {
   try {
-    updateSyncStatus('syncing');
-
-    // Only persist the 4 data arrays — never transient UI state
-    const payload = {
-      partners:  AppState.partners,
-      bills:     AppState.bills,
-      awaiting:  AppState.awaiting,
-      completed: AppState.completed
-    };
-
-    // Save to localStorage as a backup
-    localStorage.setItem('rajvi_portal_data', JSON.stringify(payload));
-
+    // Save to localStorage
+    localStorage.setItem('rajvi_portal_data', JSON.stringify(AppState));
+    
     // Save to Firebase
     await firebaseUtils.setDoc(
       firebaseUtils.doc(db, 'portal', 'main'),
       {
-        ...payload,
+        ...AppState,
         lastUpdated: firebaseUtils.serverTimestamp()
       }
     );
-
+    
     updateSyncStatus('synced');
     return true;
   } catch (error) {
@@ -4000,6 +4047,8 @@ async function loadData() {
       AppState.bills = data.bills || [];
       AppState.awaiting = data.awaiting || [];
       AppState.completed = data.completed || [];
+      AppState.extraSuratCompanies = data.extraSuratCompanies || [];
+      AppState.jamnagarExceptions = data.jamnagarExceptions || [];
       console.log('✅ Data loaded from Firebase');
     } else {
       // Fallback to localStorage
@@ -4010,6 +4059,8 @@ async function loadData() {
         AppState.bills = parsed.bills || [];
         AppState.awaiting = parsed.awaiting || [];
         AppState.completed = parsed.completed || [];
+        AppState.extraSuratCompanies = parsed.extraSuratCompanies || [];
+        AppState.jamnagarExceptions = parsed.jamnagarExceptions || [];
         console.log('✅ Data loaded from localStorage');
       }
     }
@@ -4208,7 +4259,7 @@ function generateWhatsAppMessage() {
 🤝 *PARTNER SHARE*
 ${partnerLines}
 ━━━━━━━━━━━━━━━━━━━━━
-_Internal record — Rajvi T&T ${officeLabel}_`;
+_Internal record — Rajvi T&T Surat_`;
 
   // Display preview
   document.getElementById('whatsappMessagePreview').textContent = message;
