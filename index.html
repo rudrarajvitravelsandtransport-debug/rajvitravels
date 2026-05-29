@@ -3000,7 +3000,8 @@ window.showBillDetail = showBillDetail;
 function renderAwaiting() {
   const tbody = document.getElementById('awaitingTableBody');
   const allAwaiting = AppState.awaiting;
-  const awaiting = filterByChannel(allAwaiting);
+  // Use per-bill override for filtering — does NOT affect any other section
+  const awaiting = allAwaiting.filter(b => getAwaitingBillChannel(b) === AppState.currentChannel);
   
   // Update stats
   document.getElementById('statAwaitingCount').textContent = awaiting.length;
@@ -3065,6 +3066,10 @@ function renderAwaiting() {
           <button class="btn btn-sm btn-ghost" onclick="openEditVendor('${bill.id}')" title="Edit vendor amount">
             ✏️ Vendor
           </button>
+          <button class="btn btn-sm btn-ghost" onclick="swapAwaitingChannel('${bill.id}')" title="Move to ${getAwaitingBillChannel(bill) === 'surat' ? 'Jamnagar' : 'Surat'} awaiting list"
+            style="border-color:var(--warning);color:var(--warning);">
+            🔄 ${getAwaitingBillChannel(bill) === 'surat' ? 'To Jamnagar' : 'To Surat'}
+          </button>
           <button class="btn btn-sm btn-success" onclick="openReceivePayment('${bill.id}')">
             Receive Payment
           </button>
@@ -3073,6 +3078,34 @@ function renderAwaiting() {
     </tr>
   `).join('');
 }
+
+// Per-bill channel overrides — keyed by bill.id, value: 'surat' | 'jamnagar'
+// NEVER persisted. UI-only. Resets on page reload. Backend is never touched.
+if (!window._awaitingChannelOverrides) window._awaitingChannelOverrides = {};
+
+function getAwaitingBillChannel(bill) {
+  if (window._awaitingChannelOverrides[bill.id] !== undefined) {
+    return window._awaitingChannelOverrides[bill.id];
+  }
+  return getCompanyChannel(bill.company);
+}
+
+function swapAwaitingChannel(billId) {
+  const bill = AppState.awaiting.find(b => b.id === billId);
+  if (!bill) return;
+
+  const currentCh = getAwaitingBillChannel(bill);
+  const targetCh  = currentCh === 'surat' ? 'jamnagar' : 'surat';
+
+  // Store override in memory only — no saveData(), no AppState mutation
+  window._awaitingChannelOverrides[billId] = targetCh;
+
+  showToast(`"${bill.company}" moved to ${targetCh === 'surat' ? 'Surat' : 'Jamnagar'} awaiting list`, 'success');
+  renderAwaiting();
+  updateBadges();
+}
+
+window.swapAwaitingChannel = swapAwaitingChannel;
 
 function openReceivePayment(billId) {
   const bill = AppState.awaiting.find(b => b.id === billId);
@@ -4102,7 +4135,8 @@ function updateSyncStatus(status) {
 
 function updateBadges() {
   const pendingCount = filterByChannel(AppState.bills.filter(b => b.status === 'pending')).length;
-  const awaitingCount = filterByChannel(AppState.awaiting).length;
+  // Use per-bill override for awaiting count — consistent with renderAwaiting
+  const awaitingCount = AppState.awaiting.filter(b => getAwaitingBillChannel(b) === AppState.currentChannel).length;
   
   const billsBadge = document.getElementById('billsBadge');
   if (pendingCount > 0) {
