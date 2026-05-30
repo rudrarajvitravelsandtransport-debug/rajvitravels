@@ -2924,13 +2924,18 @@ function markAsAwaiting(billId) {
   const bill = AppState.bills.find(b => b.id === billId);
   if (!bill) return;
   
+  const now = getCurrentDateTime();
   bill.status = 'awaiting';
-  bill.markedAwaitingAt = getCurrentDateTime();
+  bill.markedAwaitingAt = now;
   
+  // Add to awaiting list
   AppState.awaiting.push({
     ...bill,
-    awaitingFrom: getCurrentDateTime()
+    awaitingFrom: now
   });
+
+  // Remove from bills so it doesn't show as pending anymore
+  AppState.bills = AppState.bills.filter(b => b.id !== billId);
   
   saveData()
     .then(() => {
@@ -3080,7 +3085,7 @@ function renderAwaiting() {
 }
 
 // Per-bill channel overrides — keyed by bill.id, value: 'surat' | 'jamnagar'
-// NEVER persisted. UI-only. Resets on page reload. Backend is never touched.
+// Rebuilt from persisted AppState.jamnagarExceptions / extraSuratCompanies on every loadData().
 if (!window._awaitingChannelOverrides) window._awaitingChannelOverrides = {};
 
 function getAwaitingBillChannel(bill) {
@@ -3090,17 +3095,39 @@ function getAwaitingBillChannel(bill) {
   return getCompanyChannel(bill.company);
 }
 
-function swapAwaitingChannel(billId) {
+async function swapAwaitingChannel(billId) {
   const bill = AppState.awaiting.find(b => b.id === billId);
   if (!bill) return;
 
   const currentCh = getAwaitingBillChannel(bill);
   const targetCh  = currentCh === 'surat' ? 'jamnagar' : 'surat';
 
-  // Store override in memory only — no saveData(), no AppState mutation
+  // Immediate UI update via in-memory override
   window._awaitingChannelOverrides[billId] = targetCh;
 
-  showToast(`"${bill.company}" moved to ${targetCh === 'surat' ? 'Surat' : 'Jamnagar'} awaiting list`, 'success');
+  // Persist the company-level channel assignment so it survives page refresh
+  const companyLower = bill.company.trim().toLowerCase();
+  if (!AppState.extraSuratCompanies) AppState.extraSuratCompanies = [];
+  if (!AppState.jamnagarExceptions)  AppState.jamnagarExceptions  = [];
+
+  if (targetCh === 'jamnagar') {
+    if (!AppState.jamnagarExceptions.includes(companyLower))
+      AppState.jamnagarExceptions.push(companyLower);
+    AppState.extraSuratCompanies = AppState.extraSuratCompanies.filter(c => c !== companyLower);
+  } else {
+    if (!AppState.extraSuratCompanies.includes(companyLower))
+      AppState.extraSuratCompanies.push(companyLower);
+    AppState.jamnagarExceptions = AppState.jamnagarExceptions.filter(c => c !== companyLower);
+  }
+
+  try {
+    await saveData();
+    showToast(`"${bill.company}" moved to ${targetCh === 'surat' ? 'Surat' : 'Jamnagar'} awaiting list`, 'success');
+  } catch (err) {
+    console.error('Error saving channel swap:', err);
+    showToast('Moved locally but failed to sync to cloud', 'warning');
+  }
+
   renderAwaiting();
   updateBadges();
 }
@@ -3146,8 +3173,8 @@ function openReceivePayment(billId) {
 
       <div class="form-group">
         <label class="form-label">Vendor Amount (₹)</label>
-        <input type="number" class="form-input" id="vendorAmount" value="0" min="0" step="0.01" oninput="calculateProfit()">
-        <div class="form-help">Amount paid to vendors</div>
+        <input type="number" class="form-input" id="vendorAmount" value="${parseNumber(bill.vendorAmount)}" min="0" step="0.01" oninput="calculateProfit()">
+        <div class="form-help">Amount paid to vendors${parseNumber(bill.vendorAmount) > 0 ? ' <span style="color:var(--success);font-weight:600;">✓ Pre-filled from bill</span>' : ''}</div>
       </div>
 
       <div class="form-group">
@@ -3602,7 +3629,7 @@ function downloadCSV() {
   const filterMonth = document.getElementById('completedFilterMonth')?.value;
   const filterYear  = document.getElementById('completedFilterYear')?.value;
 
-  let records = AppState.completed;
+  let records = filterByChannel(AppState.completed);
   if (filterMonth) records = records.filter(r => r.month === filterMonth);
   if (filterYear)  records = records.filter(r => String(r.year) === String(filterYear));
 
@@ -4045,14 +4072,24 @@ window.copyEmail = copyEmail;
 // ============================================================================
 async function saveData() {
   try {
+    // Only persist the data fields — strip runtime UI state
+    const dataToSave = {
+      partners:            AppState.partners,
+      bills:               AppState.bills,
+      awaiting:            AppState.awaiting,
+      completed:           AppState.completed,
+      extraSuratCompanies: AppState.extraSuratCompanies || [],
+      jamnagarExceptions:  AppState.jamnagarExceptions  || []
+    };
+
     // Save to localStorage
-    localStorage.setItem('rajvi_portal_data', JSON.stringify(AppState));
+    localStorage.setItem('rajvi_portal_data', JSON.stringify(dataToSave));
     
     // Save to Firebase
     await firebaseUtils.setDoc(
       firebaseUtils.doc(db, 'portal', 'main'),
       {
-        ...AppState,
+        ...dataToSave,
         lastUpdated: firebaseUtils.serverTimestamp()
       }
     );
@@ -4106,6 +4143,22 @@ async function loadData() {
     populateMailCompanies();
     updateBadges();
     updateSyncStatus('synced');
+    
+    // Rebuild _awaitingChannelOverrides from persisted channel lists
+    // so awaiting swap is reflected correctly after page refresh
+    window._awaitingChannelOverrides = {};
+    AppState.awaiting.forEach(bill => {
+      const companyLower = (bill.company || '').trim().toLowerCase();
+      const allJamExc = [...JAMNAGAR_EXCEPTIONS, ...(AppState.jamnagarExceptions || [])];
+      const allSurat  = [...SURAT_COMPANIES,      ...(AppState.extraSuratCompanies || [])];
+      if (allJamExc.some(jc => companyLower === jc || companyLower.startsWith(jc))) {
+        window._awaitingChannelOverrides[bill.id] = 'jamnagar';
+      } else if (allSurat.some(sc => companyLower === sc || companyLower.startsWith(sc))) {
+        window._awaitingChannelOverrides[bill.id] = 'surat';
+      }
+    });
+    renderAwaiting();
+    updateBadges();
     
   } catch (error) {
     console.error('Error loading data:', error);
