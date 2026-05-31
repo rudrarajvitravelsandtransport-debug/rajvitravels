@@ -2103,21 +2103,22 @@ tbody td {
       <div class="section-actions">
         <button class="btn btn-secondary" onclick="invClearForm()">↺ Clear</button>
         <button class="btn btn-secondary" onclick="invNewInvoice()">+ New Invoice</button>
-        <button class="btn btn-primary"   onclick="invSaveToFirebase()">💾 Save Invoice</button>
+        <button class="btn btn-secondary" onclick="invToggleRecords()">📋 Records</button>
+        <button class="btn btn-primary"   onclick="invSaveRecord()">💾 Save Record</button>
         <button class="btn btn-primary"   onclick="invPrint()">🖨 Print / PDF</button>
       </div>
     </div>
 
-    <!-- SAVED INVOICES LIST -->
-    <div class="card" id="savedInvoicesCard">
+
+
+    <!-- INVOICE RECORDS PANEL -->
+    <div class="card" id="invRecordsCard" style="display:none;">
       <div class="card-header">
-        <div class="card-title"><span class="card-icon">📋</span>Saved Invoices</div>
-        <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="invToggleSavedList()">Show / Hide</button>
+        <div class="card-title"><span class="card-icon">📋</span>Saved Invoice Records</div>
+        <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="invToggleRecords()">✕ Close</button>
       </div>
-      <div id="savedInvoicesList" style="display:none">
-        <div id="savedInvoicesBody" style="margin-top:8px">
-          <p style="color:var(--text-dim);font-size:13px;padding:8px 0">No saved invoices yet.</p>
-        </div>
+      <div id="invRecordsBody" style="margin-top:4px;">
+        <p style="color:var(--text-dim);font-size:13px;padding:8px 0;">Loading…</p>
       </div>
     </div>
 
@@ -2126,7 +2127,7 @@ tbody td {
 
       <!-- HEADER -->
       <div style="display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:3px solid #e06600;background:#fff;">
-        <div style="width:64px;height:64px;background:#fff5ee;border:1px solid #ffd0a0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">🚗</div>
+        <img src="rajvi.png" alt="Rajvi Travels Logo" style="width:64px;height:64px;object-fit:contain;border:1px solid #ffd0a0;padding:3px;">
         <div style="text-align:center;">
           <div style="font-size:1.2rem;font-weight:800;color:#e06600;">Rajvi Travels &amp; Transport</div>
           <div style="font-size:.7rem;color:#444;margin-top:3px;">Pancheswer Tower Road, Jamnagar – 361001</div>
@@ -2273,7 +2274,7 @@ tbody td {
         </div>
         <div style="padding:11px 13px;text-align:center;">
           <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Authorised Signatory</div>
-          <div style="width:110px;height:50px;background:#fff5ee;border:1px dashed #ffb366;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#aaa;margin:8px auto 4px;">Signature</div>
+          <img src="sign.png" alt="Authorised Signatory" style="width:110px;height:50px;object-fit:contain;display:block;margin:8px auto 4px;">
           <p style="font-size:.67rem;color:#555;">For</p>
           <p style="font-size:.7rem;font-weight:800;color:#e06600;margin-top:2px;">Rajvi Travels &amp; Transport</p>
         </div>
@@ -4933,30 +4934,14 @@ function invFmtNo(n) { return 'RJ/' + invCurrentFY() + '/' + String(n).padStart(
 let invRowCount = 0;
 let invCurrentTotal = 0;
 
-// ── Auto invoice number from Firebase ────────────────────────────────────────
-async function invGetNextNumber() {
-  try {
-    const snap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoiceMeta'));
-    const data  = snap.exists() ? snap.data() : {};
-    return (data.counter || 0) + 1;
-  } catch(e) {
-    // fallback to localStorage
-    return (parseInt(localStorage.getItem('rajvi_inv_counter') || '0', 10)) + 1;
-  }
+// ── Invoice number counter — localStorage only ───────────────────────────────
+function invGetNextNumber() {
+  return (parseInt(localStorage.getItem('rajvi_inv_counter') || '0', 10)) + 1;
 }
-async function invIncrementCounter() {
-  try {
-    const ref  = firebaseUtils.doc(db, 'portal', 'invoiceMeta');
-    const snap = await firebaseUtils.getDoc(ref);
-    const next = (snap.exists() ? (snap.data().counter || 0) : 0) + 1;
-    await firebaseUtils.setDoc(ref, { counter: next }, { merge: true });
-    localStorage.setItem('rajvi_inv_counter', next);
-    return next;
-  } catch(e) {
-    const next = (parseInt(localStorage.getItem('rajvi_inv_counter') || '0', 10)) + 1;
-    localStorage.setItem('rajvi_inv_counter', next);
-    return next;
-  }
+function invIncrementCounter() {
+  const next = (parseInt(localStorage.getItem('rajvi_inv_counter') || '0', 10)) + 1;
+  localStorage.setItem('rajvi_inv_counter', next);
+  return next;
 }
 
 // ── Add / Remove rows ─────────────────────────────────────────────────────────
@@ -5105,137 +5090,128 @@ function invPopulate(data) {
   invRecalc();
 }
 
-// ── Save to Firebase ──────────────────────────────────────────────────────────
-window.invSaveToFirebase = async function() {
-  const data = invCollect();
-  if (!data.invNo) {
-    showToast('Please enter an invoice number first', 'error');
-    return;
-  }
-  try {
-    const key = 'inv_' + data.invNo.replace(/\//g, '_');
-    await firebaseUtils.setDoc(
-      firebaseUtils.doc(db, 'portal', 'invoices_' + key),
-      data
-    );
-    // Also keep a list of invoice keys
-    const metaRef  = firebaseUtils.doc(db, 'portal', 'invoiceMeta');
-    const metaSnap = await firebaseUtils.getDoc(metaRef);
-    const meta     = metaSnap.exists() ? metaSnap.data() : {};
-    const keys     = meta.keys || [];
-    if (!keys.includes(key)) keys.push(key);
-    await firebaseUtils.setDoc(metaRef, { ...meta, keys }, { merge: true });
+// Invoice is frontend-only — no Firebase used. Use 🖨 Print to save as PDF.
 
-    showToast('Invoice saved to cloud ✓', 'success');
-    await invLoadSavedList();
+// ── Save 4-field record to Firebase ─────────────────────────────────────────
+window.invSaveRecord = async function() {
+  const invNo       = document.getElementById('inv_invNo').value.trim();
+  const billName    = document.getElementById('inv_billName').value.trim();
+  const invDate     = document.getElementById('inv_invDate').value.trim();
+  const receivedAmt = parseFloat(document.getElementById('inv_receivedAmt').value) || 0;
+
+  if (!invNo)    { showToast('Enter an invoice number first', 'error'); return; }
+  if (!billName) { showToast('Enter a Bill To name first', 'error'); return; }
+
+  const record = { invNo, billName, invDate, receivedAmt, savedAt: new Date().toISOString() };
+  const key    = 'inv_' + invNo.replace(/[/]/g, '_');
+
+  try {
+    await firebaseUtils.setDoc(firebaseUtils.doc(db, 'invoiceRecords', key), record);
+
+    // ── Only now burn the counter so next invoice gets the next number ──────
+    invIncrementCounter();
+
+    showToast('Record saved ✓  —  ' + invNo, 'success');
+
+    // Pre-fill the next invoice number ready for the next bill
+    const nextN = invGetNextNumber();
+    document.getElementById('inv_invNo').value = invFmtNo(nextN);
+
+    // Refresh panel if open
+    if (document.getElementById('invRecordsCard').style.display !== 'none') {
+      await invLoadRecords();
+    }
   } catch(e) {
-    console.error('Invoice save error:', e);
-    showToast('Failed to save invoice', 'error');
+    console.error('Invoice record save error:', e);
+    showToast('Failed to save record', 'error');
   }
 };
 
-// ── Load saved invoices list ──────────────────────────────────────────────────
-async function invLoadSavedList() {
-  const body = document.getElementById('savedInvoicesBody');
-  body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0">Loading…</p>';
+// ── Load all records from Firebase ──────────────────────────────────────────
+async function invLoadRecords() {
+  const body = document.getElementById('invRecordsBody');
+  body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0;">Loading…</p>';
   try {
-    const metaSnap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoiceMeta'));
-    if (!metaSnap.exists() || !(metaSnap.data().keys || []).length) {
-      body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0">No saved invoices yet.</p>';
+    const snap = await firebaseUtils.getDocs(firebaseUtils.collection(db, 'invoiceRecords'));
+    if (snap.empty) {
+      body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0;">No records yet.</p>';
       return;
     }
-    const keys = metaSnap.data().keys || [];
-    // Fetch all invoices
-    const invoices = [];
-    for (const key of keys) {
-      try {
-        const snap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoices_' + key));
-        if (snap.exists()) invoices.push({ key, ...snap.data() });
-      } catch(e) {}
-    }
-    // Sort newest first by savedAt
-    invoices.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+    const rows = [];
+    snap.forEach(doc => rows.push({ key: doc.id, ...doc.data() }));
+    rows.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
 
-    if (!invoices.length) {
-      body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0">No saved invoices yet.</p>';
-      return;
-    }
-
-    body.innerHTML = invoices.map(inv => `
-      <div class="inv-saved-row">
-        <span class="inv-saved-no">${escapeHtml(inv.invNo || '—')}</span>
-        <span class="inv-saved-meta">
-          ${escapeHtml(inv.billName || 'Unknown')} &nbsp;·&nbsp;
-          ${inv.invDate || ''} &nbsp;·&nbsp;
-          ${escapeHtml(inv.servicePeriod || '')}
-        </span>
-        <span class="inv-saved-total">₹ ${invFmt(inv.total || 0)}</span>
-        <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;"
-          onclick="invLoadInvoice('${inv.key}')">📂 Load</button>
-        <button class="btn" style="font-size:11px;padding:5px 10px;background:#fff0f0;color:#c00;border:1px solid #fcc;"
-          onclick="invDeleteInvoice('${inv.key}', '${escapeHtml(inv.invNo || '')}')">🗑</button>
-      </div>`).join('');
+    body.innerHTML = `
+      <div style="overflow-x:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:var(--rust);color:#fff;">
+              <th style="padding:8px 10px;text-align:left;font-weight:700;">Invoice No.</th>
+              <th style="padding:8px 10px;text-align:left;font-weight:700;">Bill To</th>
+              <th style="padding:8px 10px;text-align:left;font-weight:700;">Date</th>
+              <th style="padding:8px 10px;text-align:right;font-weight:700;">Received (₹)</th>
+              <th style="padding:8px 10px;text-align:center;font-weight:700;">Delete</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((r, i) => `
+            <tr style="background:${i%2===0?'#fff':'var(--bg)'};border-bottom:1px solid var(--border);">
+              <td style="padding:7px 10px;font-weight:700;color:var(--rust);">${escapeHtml(r.invNo||'—')}</td>
+              <td style="padding:7px 10px;">${escapeHtml(r.billName||'—')}</td>
+              <td style="padding:7px 10px;color:var(--text-dim);">${r.invDate||'—'}</td>
+              <td style="padding:7px 10px;text-align:right;font-weight:700;">₹ ${(r.receivedAmt||0).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
+              <td style="padding:7px 10px;text-align:center;">
+                <button onclick="invDeleteRecord('${r.key}','${escapeHtml(r.invNo||'')}')"
+                  style="background:#fff0f0;color:#c00;border:1px solid #fcc;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:12px;">🗑</button>
+              </td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
   } catch(e) {
-    console.error('Load invoices error:', e);
-    body.innerHTML = '<p style="color:#c00;font-size:13px;padding:8px 0">Failed to load invoices.</p>';
+    console.error('Load records error:', e);
+    body.innerHTML = '<p style="color:#c00;font-size:13px;padding:8px 0;">Failed to load records.</p>';
   }
 }
 
-// ── Load a specific invoice into form ────────────────────────────────────────
-window.invLoadInvoice = async function(key) {
+// ── Delete a record ──────────────────────────────────────────────────────────
+window.invDeleteRecord = async function(key, invNo) {
+  if (!confirm('Delete record for ' + invNo + '?')) return;
   try {
-    const snap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoices_' + key));
-    if (!snap.exists()) { showToast('Invoice not found', 'error'); return; }
-    invPopulate(snap.data());
-    // scroll to form
-    document.getElementById('invCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    showToast('Invoice loaded ✓', 'success');
+    await firebaseUtils.deleteDoc(firebaseUtils.doc(db, 'invoiceRecords', key));
+    showToast('Record deleted', 'success');
+    await invLoadRecords();
   } catch(e) {
-    showToast('Failed to load invoice', 'error');
+    showToast('Failed to delete record', 'error');
   }
 };
 
-// ── Delete a saved invoice ────────────────────────────────────────────────────
-window.invDeleteInvoice = async function(key, invNo) {
-  if (!confirm('Delete invoice ' + invNo + '? This cannot be undone.')) return;
-  try {
-    await firebaseUtils.deleteDoc(firebaseUtils.doc(db, 'portal', 'invoices_' + key));
-    // Remove from meta keys
-    const metaRef  = firebaseUtils.doc(db, 'portal', 'invoiceMeta');
-    const metaSnap = await firebaseUtils.getDoc(metaRef);
-    if (metaSnap.exists()) {
-      const meta = metaSnap.data();
-      const keys = (meta.keys || []).filter(k => k !== key);
-      await firebaseUtils.setDoc(metaRef, { ...meta, keys }, { merge: true });
-    }
-    showToast('Invoice deleted', 'success');
-    await invLoadSavedList();
-  } catch(e) {
-    showToast('Failed to delete invoice', 'error');
-  }
-};
-
-// ── Toggle saved list panel ───────────────────────────────────────────────────
-window.invToggleSavedList = async function() {
-  const panel = document.getElementById('savedInvoicesList');
-  if (panel.style.display === 'none') {
-    panel.style.display = 'block';
-    await invLoadSavedList();
+// ── Toggle records panel ─────────────────────────────────────────────────────
+window.invToggleRecords = async function() {
+  const card = document.getElementById('invRecordsCard');
+  if (card.style.display === 'none') {
+    card.style.display = 'block';
+    card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    await invLoadRecords();
   } else {
-    panel.style.display = 'none';
+    card.style.display = 'none';
   }
 };
+
+window.invSaveRecord      = window.invSaveRecord;
+window.invDeleteRecord    = window.invDeleteRecord;
+window.invToggleRecords   = window.invToggleRecords;
 
 // ── New Invoice ───────────────────────────────────────────────────────────────
-window.invNewInvoice = async function() {
-  if (!confirm('Save this invoice number and start a new blank form?')) return;
-  // Increment counter
-  const n = await invIncrementCounter();
+window.invNewInvoice = function() {
+  if (!confirm('Start a new blank form? Current data will be cleared.')) return;
   _invClear();
-  document.getElementById('inv_invNo').value  = invFmtNo(n);
+  // Show the NEXT available number as a preview — counter only burns on Save
+  const n = invGetNextNumber();
+  document.getElementById('inv_invNo').value   = invFmtNo(n);
   document.getElementById('inv_invDate').value = invTodayISO();
   invSeedRows();
-  showToast('New invoice started — ' + invFmtNo(n), 'success');
+  showToast('New invoice form ready — ' + invFmtNo(n), 'success');
 };
 
 // ── Clear form ────────────────────────────────────────────────────────────────
@@ -5265,8 +5241,8 @@ window.invClearForm = function() {
 };
 
 // ── Auto-apply next number on section open ────────────────────────────────────
-async function invApplyNextNumber() {
-  const n = await invGetNextNumber();
+function invApplyNextNumber() {
+  const n = invGetNextNumber();
   const el = document.getElementById('inv_invNo');
   if (el && !el.value) el.value = invFmtNo(n);
 }
@@ -5309,7 +5285,7 @@ thead th{padding:7px 8px;font-weight:800;font-size:.72rem;border:1px solid #c455
 <div class="inv">
   <!-- HEADER -->
   <div style="display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:14px 16px;border-bottom:3px solid #e06600;">
-    <div style="width:64px;height:64px;background:#fff5ee;border:1px solid #ffd0a0;display:flex;align-items:center;justify-content:center;font-size:2rem;">🚗</div>
+    <img src="rajvi.png" alt="Rajvi Travels Logo" style="width:64px;height:64px;object-fit:contain;border:1px solid #ffd0a0;padding:3px;">
     <div style="text-align:center;">
       <div style="font-size:1.25rem;font-weight:800;color:#e06600;">Rajvi Travels &amp; Transport</div>
       <div style="font-size:.7rem;color:#444;margin-top:3px;">Pancheswer Tower Road, Jamnagar – 361001</div>
@@ -5391,7 +5367,7 @@ thead th{padding:7px 8px;font-weight:800;font-size:.72rem;border:1px solid #c455
     </div>
     <div style="padding:11px 13px;text-align:center;">
       <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Authorised Signatory</div>
-      <div style="width:110px;height:50px;background:#fff5ee;border:1px dashed #ffb366;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#aaa;margin:8px auto 4px;">Signature</div>
+      <img src="sign.png" alt="Authorised Signatory" style="width:110px;height:50px;object-fit:contain;display:block;margin:8px auto 4px;">
       <p style="font-size:.67rem;color:#555;">For</p>
       <p style="font-size:.7rem;font-weight:800;color:#e06600;margin-top:2px;">Rajvi Travels &amp; Transport</p>
     </div>
@@ -5422,7 +5398,7 @@ window.addEventListener('DOMContentLoaded', function() {
 
 })(); // end IIFE
 
-window.invSaveToFirebase  = window.invSaveToFirebase;
+
 window.invNewInvoice      = window.invNewInvoice;
 window.invClearForm       = window.invClearForm;
 window.invPrint           = window.invPrint;
@@ -5430,9 +5406,9 @@ window.invAddRow          = window.invAddRow;
 window.invRemoveRow       = window.invRemoveRow;
 window.invRecalc          = window.invRecalc;
 window.invRecalcBalance   = window.invRecalcBalance;
-window.invToggleSavedList = window.invToggleSavedList;
-window.invLoadInvoice     = window.invLoadInvoice;
-window.invDeleteInvoice   = window.invDeleteInvoice;
+
+
+
 
 // ============================================================================
 // END INVOICE MAKER
