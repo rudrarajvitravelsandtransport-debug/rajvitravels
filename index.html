@@ -1510,6 +1510,9 @@ tbody td {
   <button class="nav-tab" data-section="mail" onclick="switchTab('mail')">
     ✉️ Mail
   </button>
+  <button class="nav-tab" data-section="invoice" onclick="switchTab('invoice')">
+    🧾 Invoice
+  </button>
 </div>
 
 <!-- CHANNEL BANNER -->
@@ -2086,6 +2089,232 @@ tbody td {
         <button class="btn btn-secondary" onclick="copyEmail()">📋 Copy Email</button>
       </div>
     </div>
+  </section>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       INVOICE MAKER SECTION
+  ═══════════════════════════════════════════════════════════════════ -->
+  <section class="section" id="invoice">
+    <div class="section-header">
+      <div class="section-title-wrap">
+        <h1 class="section-title">Invoice <span class="highlight">Maker</span></h1>
+        <p class="section-subtitle">Create, save and print professional tax invoices</p>
+      </div>
+      <div class="section-actions">
+        <button class="btn btn-secondary" onclick="invClearForm()">↺ Clear</button>
+        <button class="btn btn-secondary" onclick="invNewInvoice()">+ New Invoice</button>
+        <button class="btn btn-primary"   onclick="invSaveToFirebase()">💾 Save Invoice</button>
+        <button class="btn btn-primary"   onclick="invPrint()">🖨 Print / PDF</button>
+      </div>
+    </div>
+
+    <!-- SAVED INVOICES LIST -->
+    <div class="card" id="savedInvoicesCard">
+      <div class="card-header">
+        <div class="card-title"><span class="card-icon">📋</span>Saved Invoices</div>
+        <button class="btn btn-secondary" style="font-size:12px;padding:6px 12px" onclick="invToggleSavedList()">Show / Hide</button>
+      </div>
+      <div id="savedInvoicesList" style="display:none">
+        <div id="savedInvoicesBody" style="margin-top:8px">
+          <p style="color:var(--text-dim);font-size:13px;padding:8px 0">No saved invoices yet.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- INVOICE CARD — styled to match invoice template -->
+    <div class="card" id="invCard" style="padding:0;overflow:hidden;border:2px solid #e06600;">
+
+      <!-- HEADER -->
+      <div style="display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:14px 16px 12px;border-bottom:3px solid #e06600;background:#fff;">
+        <div style="width:64px;height:64px;background:#fff5ee;border:1px solid #ffd0a0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;">🚗</div>
+        <div style="text-align:center;">
+          <div style="font-size:1.2rem;font-weight:800;color:#e06600;">Rajvi Travels &amp; Transport</div>
+          <div style="font-size:.7rem;color:#444;margin-top:3px;">Pancheswer Tower Road, Jamnagar – 361001</div>
+          <div style="font-size:.68rem;font-weight:700;color:#b34d00;margin-top:2px;">Mo. 8000818188 &nbsp;|&nbsp; GST: 24ARKPP5392H1ZE &nbsp;|&nbsp; PAN: ARKPP5392H</div>
+        </div>
+        <div style="background:#e06600;color:#fff;font-size:.64rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:3px;align-self:flex-start;">Tax Invoice</div>
+      </div>
+
+      <!-- BILL META -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1.5px solid #e06600;background:#fff;">
+        <!-- Bill To -->
+        <div style="padding:12px 14px;border-right:1.5px solid #e06600;">
+          <div style="font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#e06600;margin-bottom:8px;">Bill To</div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;">
+            <span style="font-size:.67rem;font-weight:700;color:#555;white-space:nowrap;min-width:76px;">Name</span>
+            <input type="text" id="inv_billName" placeholder="Client / Company name" class="inv-field-input">
+          </div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;">
+            <span style="font-size:.67rem;font-weight:700;color:#555;white-space:nowrap;min-width:76px;">Address</span>
+            <input type="text" id="inv_billAddress" placeholder="Address" class="inv-field-input">
+          </div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;">
+            <span style="font-size:.67rem;font-weight:700;color:#555;white-space:nowrap;min-width:76px;">Mobile</span>
+            <input type="tel" id="inv_billMobile" placeholder="Mobile number" class="inv-field-input">
+          </div>
+          <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px;">
+            <span style="font-size:.67rem;font-weight:700;color:#555;white-space:nowrap;min-width:76px;">Buyer GST</span>
+            <input type="text" id="inv_buyerGst" placeholder="GST number" autocapitalize="characters" class="inv-field-input">
+          </div>
+          <div style="display:flex;align-items:baseline;gap:6px;">
+            <span style="font-size:.67rem;font-weight:700;color:#555;white-space:nowrap;min-width:76px;">Buyer PAN</span>
+            <input type="text" id="inv_buyerPan" placeholder="PAN number" autocapitalize="characters" class="inv-field-input">
+          </div>
+        </div>
+        <!-- Invoice Meta -->
+        <div style="padding:12px 14px;background:#fff;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;">
+            <div>
+              <div style="font-size:.62rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">Invoice No.</div>
+              <input type="text" id="inv_invNo" placeholder="Auto-generated" class="inv-field-input" style="font-weight:700;">
+            </div>
+            <div>
+              <div style="font-size:.62rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">Invoice Date</div>
+              <input type="date" id="inv_invDate" class="inv-field-input" style="font-weight:700;">
+            </div>
+            <div>
+              <div style="font-size:.62rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">Service Period</div>
+              <input type="text" id="inv_servicePeriod" placeholder="e.g. Apr-26" class="inv-field-input" style="font-weight:700;">
+            </div>
+            <div>
+              <div style="font-size:.62rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">Place of Supply</div>
+              <div style="font-size:.8rem;font-weight:700;color:#1a1a1a;padding-top:4px;">Gujarat | Code: 24</div>
+            </div>
+            <div>
+              <div style="font-size:.62rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">State (Buyer)</div>
+              <input type="text" id="inv_buyerState" placeholder="e.g. Mumbai" class="inv-field-input" style="font-weight:700;">
+            </div>
+            <div>
+              <div style="font-size:.62rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.05em;">State Code</div>
+              <input type="text" id="inv_buyerStateCode" placeholder="e.g. 27" class="inv-field-input" style="font-weight:700;">
+            </div>
+          </div>
+          <div style="margin-top:10px;display:flex;align-items:baseline;gap:8px;">
+            <span style="font-size:.67rem;font-weight:700;color:#555;white-space:nowrap;">Vehicle No.</span>
+            <input type="text" id="inv_vehicleNo" placeholder="e.g. GJ-27-TD-6205" autocapitalize="characters" class="inv-field-input" style="font-weight:700;">
+          </div>
+        </div>
+      </div>
+
+      <!-- ITEMS TABLE -->
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;background:#fff;">
+        <table style="width:100%;min-width:520px;border-collapse:collapse;font-size:.76rem;">
+          <thead>
+            <tr style="background:#e06600;color:#fff;">
+              <th style="padding:7px 8px;text-align:left;font-weight:800;font-size:.72rem;border:1px solid #c45500;width:36px;">S.No</th>
+              <th style="padding:7px 8px;text-align:left;font-weight:800;font-size:.72rem;border:1px solid #c45500;min-width:120px;">Items / Services</th>
+              <th style="padding:7px 8px;text-align:left;font-weight:800;font-size:.72rem;border:1px solid #c45500;min-width:90px;">From</th>
+              <th style="padding:7px 8px;text-align:left;font-weight:800;font-size:.72rem;border:1px solid #c45500;min-width:90px;">To</th>
+              <th style="padding:7px 8px;text-align:right;font-weight:800;font-size:.72rem;border:1px solid #c45500;width:80px;">Rate</th>
+              <th style="padding:7px 8px;text-align:right;font-weight:800;font-size:.72rem;border:1px solid #c45500;width:90px;">Amount</th>
+              <th style="padding:7px 8px;border:1px solid #c45500;width:28px;"></th>
+            </tr>
+          </thead>
+          <tbody id="inv_itemsBody">
+            <!-- rows injected by JS -->
+            <tr id="inv_wettingRow" style="font-style:italic;background:#fff3e8;">
+              <td colspan="2" style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;padding-right:10px;">
+                <input type="text" id="inv_extraLabel" value="Wetting Charges" style="text-align:right;font-style:italic;font-weight:600;width:100%;border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.76rem;outline:none;min-height:26px;">
+              </td>
+              <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:center;color:#bbb;">–</td>
+              <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:center;color:#bbb;">–</td>
+              <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;">
+                <input type="number" id="inv_extraRate" placeholder="0" oninput="invRecalc()" style="border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.76rem;outline:none;width:100%;text-align:right;min-height:26px;">
+              </td>
+              <td id="inv_extraAmt" style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;font-weight:700;color:#c45500;">—</td>
+              <td style="padding:5px 8px;border:1px solid #ffe0c0;"></td>
+            </tr>
+            <tr id="inv_totalRow" style="background:#e06600 !important;">
+              <td colspan="5" style="padding:7px 12px;border:1px solid #c45500;text-align:right;font-weight:800;font-size:.82rem;color:#fff;letter-spacing:.06em;">TOTAL</td>
+              <td id="inv_grandTotal" style="padding:7px 8px;border:1px solid #c45500;text-align:right;font-weight:800;font-size:.82rem;color:#fff;">₹ 0</td>
+              <td style="padding:7px 8px;border:1px solid #c45500;background:#e06600;"></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ADD ROW -->
+      <div style="padding:7px 12px;border-bottom:1px solid #ffe0c0;background:#fff;">
+        <button onclick="invAddRow()" style="background:none;border:1.5px dashed #ffb366;color:#e06600;font-size:.72rem;font-family:inherit;padding:5px 14px;cursor:pointer;border-radius:3px;min-height:32px;">+ Add Row</button>
+      </div>
+
+      <!-- RECEIVED / BALANCE -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1.5px solid #e06600;border-bottom:1.5px solid #e06600;background:#fff;">
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:8px;border-right:1.5px solid #e06600;flex-wrap:wrap;">
+          <span style="font-size:.68rem;font-weight:800;color:#e06600;white-space:nowrap;">Received Amount: ₹</span>
+          <input type="number" id="inv_receivedAmt" placeholder="0.00" inputmode="decimal" oninput="invRecalcBalance()" style="border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.84rem;color:#1a1a1a;font-weight:700;flex:1;min-width:60px;outline:none;min-height:28px;">
+        </div>
+        <div style="padding:9px 14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#fff;">
+          <span style="font-size:.68rem;font-weight:800;color:#e06600;white-space:nowrap;">Balance Amount: ₹</span>
+          <input type="text" id="inv_balanceAmt" placeholder="auto" readonly style="border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.84rem;color:#c45500;font-weight:800;flex:1;min-width:60px;outline:none;min-height:28px;">
+        </div>
+      </div>
+
+      <!-- NOTES -->
+      <div style="padding:7px 14px;font-size:.72rem;color:#555;border-bottom:1px solid #ffe0c0;background:#fff8f2;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <strong style="color:#e06600;white-space:nowrap;">Notes:</strong>
+        <input type="text" id="inv_notesText" value="All included with driver allowance" style="border:none;border-bottom:1px dashed #ffb366;background:transparent;font-family:inherit;font-size:.72rem;color:#555;outline:none;flex:1;min-width:80px;min-height:26px;">
+      </div>
+
+      <!-- BOTTOM GRID -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-top:2px solid #e06600;background:#fff;">
+        <div style="padding:11px 13px;border-right:1px solid #ffe0c0;border-bottom:1px solid #ffe0c0;">
+          <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Bank Details</div>
+          <p style="font-size:.69rem;color:#444;line-height:1.65;"><strong style="color:#1a1a1a;">ICICI Bank</strong><br>A/c No.: 247205002115<br>IFSC: ICIC0002472<br>Branch: Grain Market, Jamnagar</p>
+        </div>
+        <div style="padding:11px 13px;border-bottom:1px solid #ffe0c0;">
+          <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Payment QR</div>
+          <div style="width:64px;height:64px;background:#fff0e0;border:1.5px dashed #ffb366;display:flex;align-items:center;justify-content:center;font-size:.56rem;color:#aaa;text-align:center;margin-top:4px;">QR Code<br>Placeholder</div>
+          <p style="font-size:.64rem;color:#888;margin-top:5px;">PhonePe / GPay / PayTM</p>
+        </div>
+        <div style="padding:11px 13px;border-right:1px solid #ffe0c0;">
+          <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Terms &amp; Conditions</div>
+          <p style="font-size:.69rem;color:#444;line-height:1.65;">1. Subject to Jamnagar Jurisdiction.<br>2. Interest @ 18% for delayed payment after 45 days.<br>3. GST payable on Reverse Charge.<br>4. E. &amp; O.E.</p>
+        </div>
+        <div style="padding:11px 13px;text-align:center;">
+          <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Authorised Signatory</div>
+          <div style="width:110px;height:50px;background:#fff5ee;border:1px dashed #ffb366;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#aaa;margin:8px auto 4px;">Signature</div>
+          <p style="font-size:.67rem;color:#555;">For</p>
+          <p style="font-size:.7rem;font-weight:800;color:#e06600;margin-top:2px;">Rajvi Travels &amp; Transport</p>
+        </div>
+      </div>
+
+    </div><!-- /inv card -->
+
+    <!-- inline style for inv-field-input -->
+    <style>
+      .inv-field-input {
+        border: none;
+        border-bottom: 1.5px dashed #ffb366;
+        background: transparent;
+        font-family: inherit;
+        font-size: .8rem;
+        color: #1a1a1a;
+        padding: 3px 2px;
+        outline: none;
+        width: 100%;
+        min-height: 28px;
+      }
+      .inv-field-input:focus { border-bottom-color: #e06600; }
+      #inv_itemsBody tr:nth-child(even) { background: #fff8f2; }
+      @media print {
+        body > *:not(#invPrintFrame) { display: none !important; }
+        #invPrintFrame { display: block !important; }
+      }
+      .inv-saved-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid var(--border);
+        flex-wrap: wrap;
+      }
+      .inv-saved-row:last-child { border-bottom: none; }
+      .inv-saved-no { font-weight: 700; color: #e06600; font-size: 13px; min-width: 110px; }
+      .inv-saved-meta { flex: 1; font-size: 12px; color: var(--text-dim); }
+      .inv-saved-total { font-weight: 700; font-size: 13px; color: var(--text); }
+    </style>
+
   </section>
 
 </div>
@@ -4680,6 +4909,535 @@ async function init() {
 }
 
 // Start the app — called after login OR on page load if session exists
+
+// ============================================================================
+// INVOICE MAKER — Full Backend
+// ============================================================================
+
+(function() {
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function invFmt(n) {
+  return Number(n).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function invEsc(s) { return String(s||'').replace(/"/g,'&quot;'); }
+function invTodayISO() { return new Date().toISOString().split('T')[0]; }
+function invCurrentFY() {
+  const now = new Date(), yr = now.getFullYear(), mo = now.getMonth();
+  const s = mo >= 3 ? yr : yr - 1;
+  return String(s).slice(2) + '-' + String(s + 1).slice(2);
+}
+function invFmtNo(n) { return 'RJ/' + invCurrentFY() + '/' + String(n).padStart(3,'0'); }
+
+// ── Row counter ───────────────────────────────────────────────────────────────
+let invRowCount = 0;
+let invCurrentTotal = 0;
+
+// ── Auto invoice number from Firebase ────────────────────────────────────────
+async function invGetNextNumber() {
+  try {
+    const snap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoiceMeta'));
+    const data  = snap.exists() ? snap.data() : {};
+    return (data.counter || 0) + 1;
+  } catch(e) {
+    // fallback to localStorage
+    return (parseInt(localStorage.getItem('rajvi_inv_counter') || '0', 10)) + 1;
+  }
+}
+async function invIncrementCounter() {
+  try {
+    const ref  = firebaseUtils.doc(db, 'portal', 'invoiceMeta');
+    const snap = await firebaseUtils.getDoc(ref);
+    const next = (snap.exists() ? (snap.data().counter || 0) : 0) + 1;
+    await firebaseUtils.setDoc(ref, { counter: next }, { merge: true });
+    localStorage.setItem('rajvi_inv_counter', next);
+    return next;
+  } catch(e) {
+    const next = (parseInt(localStorage.getItem('rajvi_inv_counter') || '0', 10)) + 1;
+    localStorage.setItem('rajvi_inv_counter', next);
+    return next;
+  }
+}
+
+// ── Add / Remove rows ─────────────────────────────────────────────────────────
+window.invAddRow = function(service='', from='', to='', rate='') {
+  invRowCount++;
+  const id = invRowCount;
+  const tr = document.createElement('tr');
+  tr.id = 'inv-row-' + id;
+  tr.dataset.rid = id;
+  tr.style.background = (id % 2 === 0) ? '#fff8f2' : '#fff';
+  tr.innerHTML = `
+    <td class="inv-sno" style="padding:5px 8px;border:1px solid #ffe0c0;text-align:center;font-size:.76rem;">${id}</td>
+    <td style="padding:5px 8px;border:1px solid #ffe0c0;">
+      <input type="text" value="${invEsc(service)}" placeholder="Service description"
+        style="border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.76rem;color:#1a1a1a;width:100%;outline:none;min-height:26px;"
+        oninput="invRecalc()"/>
+    </td>
+    <td style="padding:5px 8px;border:1px solid #ffe0c0;min-width:90px;word-break:break-word;">
+      <input type="text" value="${invEsc(from)}" placeholder="From"
+        style="border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.76rem;color:#1a1a1a;width:100%;outline:none;min-height:26px;"/>
+    </td>
+    <td style="padding:5px 8px;border:1px solid #ffe0c0;min-width:90px;word-break:break-word;">
+      <input type="text" value="${invEsc(to)}" placeholder="To"
+        style="border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.76rem;color:#1a1a1a;width:100%;outline:none;min-height:26px;"/>
+    </td>
+    <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;">
+      <input type="number" value="${invEsc(rate)}" placeholder="0" id="inv-rate-${id}"
+        style="border:none;border-bottom:1.5px dashed #ffb366;background:transparent;font-family:inherit;font-size:.76rem;color:#1a1a1a;width:100%;text-align:right;outline:none;min-height:26px;"
+        oninput="invRecalc()" inputmode="decimal"/>
+    </td>
+    <td id="inv-amt-${id}" style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;font-weight:700;color:#c45500;white-space:nowrap;">—</td>
+    <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:center;">
+      <button onclick="invRemoveRow(${id})"
+        style="background:none;border:none;color:#c00;cursor:pointer;font-size:.85rem;padding:2px 4px;line-height:1;min-height:24px;">✕</button>
+    </td>`;
+  const wetting = document.getElementById('inv_wettingRow');
+  document.getElementById('inv_itemsBody').insertBefore(tr, wetting);
+  if (rate) invRecalc();
+};
+
+window.invRemoveRow = function(id) {
+  const el = document.getElementById('inv-row-' + id);
+  if (el) el.remove();
+  invRenumber();
+  invRecalc();
+};
+
+function invRenumber() {
+  let i = 1;
+  document.querySelectorAll('#inv_itemsBody tr[data-rid]').forEach(tr => {
+    const sno = tr.querySelector('.inv-sno');
+    if (sno) sno.textContent = i++;
+  });
+}
+
+// ── Recalc ────────────────────────────────────────────────────────────────────
+window.invRecalc = function() {
+  let sub = 0;
+  document.querySelectorAll('#inv_itemsBody tr[data-rid]').forEach(tr => {
+    const id    = tr.dataset.rid;
+    const rateEl = document.getElementById('inv-rate-' + id);
+    const amtEl  = document.getElementById('inv-amt-'  + id);
+    if (!rateEl || !amtEl) return;
+    const r = parseFloat(rateEl.value) || 0;
+    sub += r;
+    amtEl.textContent = r > 0 ? '₹ ' + invFmt(r) : '—';
+  });
+  const extra = parseFloat(document.getElementById('inv_extraRate').value) || 0;
+  sub += extra;
+  document.getElementById('inv_extraAmt').textContent = extra > 0 ? '₹ ' + invFmt(extra) : '—';
+  invCurrentTotal = sub;
+  document.getElementById('inv_grandTotal').textContent = '₹ ' + invFmt(sub);
+  invRecalcBalance();
+};
+
+window.invRecalcBalance = function() {
+  const rec = parseFloat(document.getElementById('inv_receivedAmt').value) || 0;
+  const bal = invCurrentTotal - rec;
+  document.getElementById('inv_balanceAmt').value =
+    bal >= 0 ? '₹ ' + invFmt(bal) : '− ₹ ' + invFmt(Math.abs(bal));
+};
+
+// ── Seed default rows ─────────────────────────────────────────────────────────
+function invSeedRows() {
+  invAddRow('Local Rental booking', '', '', '');
+  invAddRow('Local Rental booking', '', '', '');
+  invAddRow('Parking', '', '', '');
+}
+
+// ── Collect current form data ─────────────────────────────────────────────────
+function invCollect() {
+  const rows = [];
+  document.querySelectorAll('#inv_itemsBody tr[data-rid]').forEach(tr => {
+    const inputs = tr.querySelectorAll('input');
+    rows.push({
+      service: inputs[0]?.value || '',
+      from:    inputs[1]?.value || '',
+      to:      inputs[2]?.value || '',
+      rate:    parseFloat(inputs[3]?.value) || 0
+    });
+  });
+  return {
+    invNo:         document.getElementById('inv_invNo').value,
+    invDate:       document.getElementById('inv_invDate').value,
+    billName:      document.getElementById('inv_billName').value,
+    billAddress:   document.getElementById('inv_billAddress').value,
+    billMobile:    document.getElementById('inv_billMobile').value,
+    buyerGst:      document.getElementById('inv_buyerGst').value,
+    buyerPan:      document.getElementById('inv_buyerPan').value,
+    servicePeriod: document.getElementById('inv_servicePeriod').value,
+    buyerState:    document.getElementById('inv_buyerState').value,
+    buyerStateCode:document.getElementById('inv_buyerStateCode').value,
+    vehicleNo:     document.getElementById('inv_vehicleNo').value,
+    extraLabel:    document.getElementById('inv_extraLabel').value,
+    extraRate:     parseFloat(document.getElementById('inv_extraRate').value) || 0,
+    receivedAmt:   parseFloat(document.getElementById('inv_receivedAmt').value) || 0,
+    notesText:     document.getElementById('inv_notesText').value,
+    rows,
+    total: invCurrentTotal,
+    savedAt: new Date().toISOString()
+  };
+}
+
+// ── Populate form from saved data ─────────────────────────────────────────────
+function invPopulate(data) {
+  document.getElementById('inv_invNo').value          = data.invNo || '';
+  document.getElementById('inv_invDate').value        = data.invDate || invTodayISO();
+  document.getElementById('inv_billName').value       = data.billName || '';
+  document.getElementById('inv_billAddress').value    = data.billAddress || '';
+  document.getElementById('inv_billMobile').value     = data.billMobile || '';
+  document.getElementById('inv_buyerGst').value       = data.buyerGst || '';
+  document.getElementById('inv_buyerPan').value       = data.buyerPan || '';
+  document.getElementById('inv_servicePeriod').value  = data.servicePeriod || '';
+  document.getElementById('inv_buyerState').value     = data.buyerState || '';
+  document.getElementById('inv_buyerStateCode').value = data.buyerStateCode || '';
+  document.getElementById('inv_vehicleNo').value      = data.vehicleNo || '';
+  document.getElementById('inv_extraLabel').value     = data.extraLabel || 'Wetting Charges';
+  document.getElementById('inv_extraRate').value      = data.extraRate || '';
+  document.getElementById('inv_receivedAmt').value    = data.receivedAmt || '';
+  document.getElementById('inv_notesText').value      = data.notesText || 'All included with driver allowance';
+
+  // clear existing rows
+  document.querySelectorAll('#inv_itemsBody tr[data-rid]').forEach(r => r.remove());
+  invRowCount = 0;
+  (data.rows || []).forEach(r => invAddRow(r.service, r.from, r.to, r.rate));
+  invRecalc();
+}
+
+// ── Save to Firebase ──────────────────────────────────────────────────────────
+window.invSaveToFirebase = async function() {
+  const data = invCollect();
+  if (!data.invNo) {
+    showToast('Please enter an invoice number first', 'error');
+    return;
+  }
+  try {
+    const key = 'inv_' + data.invNo.replace(/\//g, '_');
+    await firebaseUtils.setDoc(
+      firebaseUtils.doc(db, 'portal', 'invoices_' + key),
+      data
+    );
+    // Also keep a list of invoice keys
+    const metaRef  = firebaseUtils.doc(db, 'portal', 'invoiceMeta');
+    const metaSnap = await firebaseUtils.getDoc(metaRef);
+    const meta     = metaSnap.exists() ? metaSnap.data() : {};
+    const keys     = meta.keys || [];
+    if (!keys.includes(key)) keys.push(key);
+    await firebaseUtils.setDoc(metaRef, { ...meta, keys }, { merge: true });
+
+    showToast('Invoice saved to cloud ✓', 'success');
+    await invLoadSavedList();
+  } catch(e) {
+    console.error('Invoice save error:', e);
+    showToast('Failed to save invoice', 'error');
+  }
+};
+
+// ── Load saved invoices list ──────────────────────────────────────────────────
+async function invLoadSavedList() {
+  const body = document.getElementById('savedInvoicesBody');
+  body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0">Loading…</p>';
+  try {
+    const metaSnap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoiceMeta'));
+    if (!metaSnap.exists() || !(metaSnap.data().keys || []).length) {
+      body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0">No saved invoices yet.</p>';
+      return;
+    }
+    const keys = metaSnap.data().keys || [];
+    // Fetch all invoices
+    const invoices = [];
+    for (const key of keys) {
+      try {
+        const snap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoices_' + key));
+        if (snap.exists()) invoices.push({ key, ...snap.data() });
+      } catch(e) {}
+    }
+    // Sort newest first by savedAt
+    invoices.sort((a, b) => new Date(b.savedAt) - new Date(a.savedAt));
+
+    if (!invoices.length) {
+      body.innerHTML = '<p style="color:var(--text-dim);font-size:13px;padding:8px 0">No saved invoices yet.</p>';
+      return;
+    }
+
+    body.innerHTML = invoices.map(inv => `
+      <div class="inv-saved-row">
+        <span class="inv-saved-no">${escapeHtml(inv.invNo || '—')}</span>
+        <span class="inv-saved-meta">
+          ${escapeHtml(inv.billName || 'Unknown')} &nbsp;·&nbsp;
+          ${inv.invDate || ''} &nbsp;·&nbsp;
+          ${escapeHtml(inv.servicePeriod || '')}
+        </span>
+        <span class="inv-saved-total">₹ ${invFmt(inv.total || 0)}</span>
+        <button class="btn btn-secondary" style="font-size:11px;padding:5px 10px;"
+          onclick="invLoadInvoice('${inv.key}')">📂 Load</button>
+        <button class="btn" style="font-size:11px;padding:5px 10px;background:#fff0f0;color:#c00;border:1px solid #fcc;"
+          onclick="invDeleteInvoice('${inv.key}', '${escapeHtml(inv.invNo || '')}')">🗑</button>
+      </div>`).join('');
+  } catch(e) {
+    console.error('Load invoices error:', e);
+    body.innerHTML = '<p style="color:#c00;font-size:13px;padding:8px 0">Failed to load invoices.</p>';
+  }
+}
+
+// ── Load a specific invoice into form ────────────────────────────────────────
+window.invLoadInvoice = async function(key) {
+  try {
+    const snap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'invoices_' + key));
+    if (!snap.exists()) { showToast('Invoice not found', 'error'); return; }
+    invPopulate(snap.data());
+    // scroll to form
+    document.getElementById('invCard').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showToast('Invoice loaded ✓', 'success');
+  } catch(e) {
+    showToast('Failed to load invoice', 'error');
+  }
+};
+
+// ── Delete a saved invoice ────────────────────────────────────────────────────
+window.invDeleteInvoice = async function(key, invNo) {
+  if (!confirm('Delete invoice ' + invNo + '? This cannot be undone.')) return;
+  try {
+    await firebaseUtils.deleteDoc(firebaseUtils.doc(db, 'portal', 'invoices_' + key));
+    // Remove from meta keys
+    const metaRef  = firebaseUtils.doc(db, 'portal', 'invoiceMeta');
+    const metaSnap = await firebaseUtils.getDoc(metaRef);
+    if (metaSnap.exists()) {
+      const meta = metaSnap.data();
+      const keys = (meta.keys || []).filter(k => k !== key);
+      await firebaseUtils.setDoc(metaRef, { ...meta, keys }, { merge: true });
+    }
+    showToast('Invoice deleted', 'success');
+    await invLoadSavedList();
+  } catch(e) {
+    showToast('Failed to delete invoice', 'error');
+  }
+};
+
+// ── Toggle saved list panel ───────────────────────────────────────────────────
+window.invToggleSavedList = async function() {
+  const panel = document.getElementById('savedInvoicesList');
+  if (panel.style.display === 'none') {
+    panel.style.display = 'block';
+    await invLoadSavedList();
+  } else {
+    panel.style.display = 'none';
+  }
+};
+
+// ── New Invoice ───────────────────────────────────────────────────────────────
+window.invNewInvoice = async function() {
+  if (!confirm('Save this invoice number and start a new blank form?')) return;
+  // Increment counter
+  const n = await invIncrementCounter();
+  _invClear();
+  document.getElementById('inv_invNo').value  = invFmtNo(n);
+  document.getElementById('inv_invDate').value = invTodayISO();
+  invSeedRows();
+  showToast('New invoice started — ' + invFmtNo(n), 'success');
+};
+
+// ── Clear form ────────────────────────────────────────────────────────────────
+function _invClear() {
+  ['inv_billName','inv_billAddress','inv_billMobile','inv_buyerGst','inv_buyerPan',
+   'inv_vehicleNo','inv_servicePeriod','inv_buyerState','inv_buyerStateCode',
+   'inv_receivedAmt','inv_invNo','inv_invDate'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('inv_notesText').value  = 'All included with driver allowance';
+  document.getElementById('inv_extraLabel').value  = 'Wetting Charges';
+  document.getElementById('inv_extraRate').value   = '';
+  document.getElementById('inv_extraAmt').textContent = '—';
+  document.querySelectorAll('#inv_itemsBody tr[data-rid]').forEach(r => r.remove());
+  invRowCount = 0; invCurrentTotal = 0;
+  document.getElementById('inv_grandTotal').textContent = '₹ 0';
+  document.getElementById('inv_balanceAmt').value = '';
+}
+
+window.invClearForm = function() {
+  if (!confirm('Clear all invoice fields?')) return;
+  _invClear();
+  document.getElementById('inv_invDate').value = invTodayISO();
+  invSeedRows();
+  invApplyNextNumber();
+};
+
+// ── Auto-apply next number on section open ────────────────────────────────────
+async function invApplyNextNumber() {
+  const n = await invGetNextNumber();
+  const el = document.getElementById('inv_invNo');
+  if (el && !el.value) el.value = invFmtNo(n);
+}
+
+// ── Print — generates a clean printable page ──────────────────────────────────
+window.invPrint = function() {
+  const data = invCollect();
+
+  const rowsHtml = (data.rows || []).map((r, i) => `
+    <tr style="background:${i%2===1?'#fff8f2':'#fff'}">
+      <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:center;">${i+1}</td>
+      <td style="padding:5px 8px;border:1px solid #ffe0c0;">${r.service}</td>
+      <td style="padding:5px 8px;border:1px solid #ffe0c0;">${r.from}</td>
+      <td style="padding:5px 8px;border:1px solid #ffe0c0;">${r.to}</td>
+      <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;">${r.rate > 0 ? '₹ '+invFmt(r.rate) : '—'}</td>
+      <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;font-weight:700;color:#c45500;">${r.rate > 0 ? '₹ '+invFmt(r.rate) : '—'}</td>
+    </tr>`).join('');
+
+  const extraAmt  = data.extraRate > 0 ? '₹ '+invFmt(data.extraRate) : '—';
+  const balance   = data.total - data.receivedAmt;
+  const balStr    = balance >= 0 ? '₹ '+invFmt(balance) : '− ₹ '+invFmt(Math.abs(balance));
+
+  const html = `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"/>
+<title>Invoice ${data.invNo}</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Nunito',sans-serif;color:#1a1a1a;background:#fff;padding:16px;}
+.inv{width:100%;max-width:860px;margin:0 auto;border:2px solid #e06600;}
+table{width:100%;border-collapse:collapse;font-size:.76rem;}
+thead tr{background:#e06600;color:#fff;}
+thead th{padding:7px 8px;font-weight:800;font-size:.72rem;border:1px solid #c45500;}
+.tot-row td{background:#e06600;color:#fff;font-weight:800;font-size:.82rem;border:1px solid #c45500;padding:7px 8px;}
+@media print{body{padding:0;}.no-print{display:none!important;}}
+</style></head><body>
+<div style="text-align:center;margin-bottom:10px;" class="no-print">
+  <button onclick="window.print()" style="padding:10px 28px;background:#e06600;color:#fff;border:none;border-radius:6px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;">🖨 Print / Save PDF</button>
+</div>
+<div class="inv">
+  <!-- HEADER -->
+  <div style="display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:10px;padding:14px 16px;border-bottom:3px solid #e06600;">
+    <div style="width:64px;height:64px;background:#fff5ee;border:1px solid #ffd0a0;display:flex;align-items:center;justify-content:center;font-size:2rem;">🚗</div>
+    <div style="text-align:center;">
+      <div style="font-size:1.25rem;font-weight:800;color:#e06600;">Rajvi Travels &amp; Transport</div>
+      <div style="font-size:.7rem;color:#444;margin-top:3px;">Pancheswer Tower Road, Jamnagar – 361001</div>
+      <div style="font-size:.68rem;font-weight:700;color:#b34d00;margin-top:2px;">Mo. 8000818188 &nbsp;|&nbsp; GST: 24ARKPP5392H1ZE &nbsp;|&nbsp; PAN: ARKPP5392H</div>
+    </div>
+    <div style="background:#e06600;color:#fff;font-size:.64rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:3px;align-self:flex-start;">Tax Invoice</div>
+  </div>
+  <!-- META -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1.5px solid #e06600;">
+    <div style="padding:12px 14px;border-right:1.5px solid #e06600;">
+      <div style="font-size:.62rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#e06600;margin-bottom:8px;">Bill To</div>
+      <table style="font-size:.78rem;border:none;"><tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:4px;">Name</td><td style="border:none;padding-bottom:4px;">${data.billName}</td></tr>
+      <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:4px;">Address</td><td style="border:none;padding-bottom:4px;">${data.billAddress}</td></tr>
+      <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:4px;">Mobile</td><td style="border:none;padding-bottom:4px;">${data.billMobile}</td></tr>
+      <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:4px;">Buyer GST</td><td style="border:none;padding-bottom:4px;">${data.buyerGst}</td></tr>
+      <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;">Buyer PAN</td><td style="border:none;">${data.buyerPan}</td></tr></table>
+    </div>
+    <div style="padding:12px 14px;">
+      <table style="font-size:.78rem;border:none;width:100%;">
+        <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:6px;">Invoice No.</td><td style="border:none;font-weight:700;padding-bottom:6px;">${data.invNo}</td></tr>
+        <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:6px;">Invoice Date</td><td style="border:none;font-weight:700;padding-bottom:6px;">${data.invDate}</td></tr>
+        <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:6px;">Service Period</td><td style="border:none;font-weight:700;padding-bottom:6px;">${data.servicePeriod}</td></tr>
+        <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:6px;">Place of Supply</td><td style="border:none;font-weight:700;padding-bottom:6px;">Gujarat | Code: 24</td></tr>
+        <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;padding-bottom:6px;">State (Buyer)</td><td style="border:none;font-weight:700;padding-bottom:6px;">${data.buyerState} | ${data.buyerStateCode}</td></tr>
+        <tr><td style="border:none;font-weight:700;color:#555;padding-right:8px;white-space:nowrap;">Vehicle No.</td><td style="border:none;font-weight:700;">${data.vehicleNo}</td></tr>
+      </table>
+    </div>
+  </div>
+  <!-- TABLE -->
+  <table>
+    <thead><tr>
+      <th style="width:36px;text-align:center;">S.No</th>
+      <th>Items / Services</th><th>From</th><th>To</th>
+      <th style="text-align:right;width:90px;">Rate</th>
+      <th style="text-align:right;width:100px;">Amount</th>
+    </tr></thead>
+    <tbody>
+      ${rowsHtml}
+      <tr style="font-style:italic;background:#fff3e8;">
+        <td colspan="2" style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;font-style:italic;font-weight:600;">${data.extraLabel}</td>
+        <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:center;color:#bbb;">–</td>
+        <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:center;color:#bbb;">–</td>
+        <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;">${data.extraRate > 0 ? '₹ '+invFmt(data.extraRate) : '—'}</td>
+        <td style="padding:5px 8px;border:1px solid #ffe0c0;text-align:right;font-weight:700;color:#c45500;">${extraAmt}</td>
+      </tr>
+      <tr class="tot-row">
+        <td colspan="5" style="text-align:right;padding-right:12px;letter-spacing:.06em;">TOTAL</td>
+        <td style="text-align:right;">₹ ${invFmt(data.total)}</td>
+      </tr>
+    </tbody>
+  </table>
+  <!-- RECEIVED / BALANCE -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;border-top:1.5px solid #e06600;border-bottom:1.5px solid #e06600;">
+    <div style="padding:9px 14px;border-right:1.5px solid #e06600;font-size:.82rem;">
+      <strong style="color:#e06600;">Received Amount: </strong> ₹ ${invFmt(data.receivedAmt)}
+    </div>
+    <div style="padding:9px 14px;font-size:.82rem;">
+      <strong style="color:#e06600;">Balance Amount: </strong> <strong style="color:#c45500;">${balStr}</strong>
+    </div>
+  </div>
+  <!-- NOTES -->
+  <div style="padding:7px 14px;font-size:.72rem;color:#555;border-bottom:1px solid #ffe0c0;background:#fff8f2;">
+    <strong style="color:#e06600;">Notes:</strong> ${data.notesText}
+  </div>
+  <!-- BOTTOM -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;border-top:2px solid #e06600;">
+    <div style="padding:11px 13px;border-right:1px solid #ffe0c0;">
+      <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Bank Details</div>
+      <p style="font-size:.69rem;color:#444;line-height:1.65;"><strong>ICICI Bank</strong><br>A/c No.: 247205002115<br>IFSC: ICIC0002472<br>Branch: Grain Market, Jamnagar</p>
+    </div>
+    <div style="padding:11px 13px;border-right:1px solid #ffe0c0;">
+      <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Payment QR</div>
+      <div style="width:64px;height:64px;background:#fff0e0;border:1.5px dashed #ffb366;display:flex;align-items:center;justify-content:center;font-size:.56rem;color:#aaa;text-align:center;margin-top:4px;">QR Code<br>Placeholder</div>
+      <p style="font-size:.64rem;color:#888;margin-top:5px;">PhonePe / GPay / PayTM</p>
+    </div>
+    <div style="padding:11px 13px;border-right:1px solid #ffe0c0;">
+      <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Terms &amp; Conditions</div>
+      <p style="font-size:.69rem;color:#444;line-height:1.65;">1. Subject to Jamnagar Jurisdiction.<br>2. Interest @ 18% for delayed payment after 45 days.<br>3. GST payable on Reverse Charge.<br>4. E. &amp; O.E.</p>
+    </div>
+    <div style="padding:11px 13px;text-align:center;">
+      <div style="font-size:.7rem;font-weight:800;color:#e06600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:5px;padding-bottom:3px;border-bottom:1.5px solid #ffe0c0;">Authorised Signatory</div>
+      <div style="width:110px;height:50px;background:#fff5ee;border:1px dashed #ffb366;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:#aaa;margin:8px auto 4px;">Signature</div>
+      <p style="font-size:.67rem;color:#555;">For</p>
+      <p style="font-size:.7rem;font-weight:800;color:#e06600;margin-top:2px;">Rajvi Travels &amp; Transport</p>
+    </div>
+  </div>
+</div>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+};
+
+// ── Wire into switchTab ───────────────────────────────────────────────────────
+const _origSwitchTab = window.switchTab;
+window.switchTab = function(sectionName) {
+  _origSwitchTab(sectionName);
+  if (sectionName === 'invoice') invApplyNextNumber();
+};
+
+// ── Init invoice form on page load ────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', function() {
+  document.getElementById('inv_invDate').value = invTodayISO();
+  invSeedRows();
+  invApplyNextNumber();
+});
+
+// firebaseUtils.deleteDoc is available (confirmed in firebase utils definition)
+
+})(); // end IIFE
+
+window.invSaveToFirebase  = window.invSaveToFirebase;
+window.invNewInvoice      = window.invNewInvoice;
+window.invClearForm       = window.invClearForm;
+window.invPrint           = window.invPrint;
+window.invAddRow          = window.invAddRow;
+window.invRemoveRow       = window.invRemoveRow;
+window.invRecalc          = window.invRecalc;
+window.invRecalcBalance   = window.invRecalcBalance;
+window.invToggleSavedList = window.invToggleSavedList;
+window.invLoadInvoice     = window.invLoadInvoice;
+window.invDeleteInvoice   = window.invDeleteInvoice;
+
+// ============================================================================
+// END INVOICE MAKER
+// ============================================================================
+
 if (window._autoInit) init();
 </script>
 
