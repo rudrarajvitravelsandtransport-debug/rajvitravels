@@ -3387,7 +3387,7 @@ function openReceivePayment(billId) {
         <div class="form-group">
           <label class="form-label">GST % <span style="color:var(--text-mid);font-weight:400;">(0 = no GST, 5 = normal)</span></label>
           <input type="number" class="form-input" id="gstPercent" value="5" min="0" max="100" step="0.01" oninput="calculateProfit()">
-          <div class="form-help">GST = X% of received — deducted from profit. Enter 0 for none.</div>
+          <div class="form-help">GST = X% of received + TDS — deducted from profit. Enter 0 for none.</div>
         </div>
       </div>
 
@@ -3434,7 +3434,7 @@ function calculateProfit() {
   const tdsAmount     = (billingAmount * tdsPercent) / 100;
 
   // GST = X% of received — only deducted if gstPct > 0
-  const gstAmount     = (received * gstPct) / 100;
+  const gstAmount     = ((received + tdsAmount) * gstPct) / 100;
 
   // Net Profit = Received - GST - Vendor - Expenses ± CarryForward
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
@@ -3518,7 +3518,7 @@ function confirmReceivePayment() {
   }
 
   const tdsAmount = (bill.amount * tdsPercent) / 100;
-  const gstAmount = (received * gstPct) / 100;
+  const gstAmount = ((received  + tdsAmount) * gstPct) / 100;
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
   
   // Calculate partner distribution
@@ -4047,7 +4047,7 @@ function recalcEditCompleted() {
   const billingAmt   = parseNumber(document.getElementById('ec_amount')?.value);
 
   const tdsAmount = (billingAmt * tdsPercent) / 100;
-  const gstAmount = (received * gstPct) / 100;
+  const gstAmount = ((received + tdsAmount) * gstPct) / 100;
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
 
   const partners    = AppState.partners.filter(p => p.percentage > 0);
@@ -4125,7 +4125,7 @@ async function saveEditCompleted() {
 
   const billingAmount = parseNumber(document.getElementById('ec_amount').value);
   const tdsAmount     = (billingAmount * tdsPercent) / 100;
-  const gstAmount     = (received * gstPct) / 100;
+  const gstAmount     = ((received + tdsAmount) * gstPct) / 100;
   const netProfit     = received - gstAmount - vendor - expenses + carryForward;
 
   const partners = AppState.partners.filter(p => p.percentage > 0);
@@ -4501,7 +4501,7 @@ function generateWhatsAppMessage() {
   
   // TDS = 1% of total billing — shown for record only
   const tds = billing * 0.01;
-  const gst = (received * 5) / 100; // Always 5% GST on received amount
+  const gst = ((received + tds) * 5) / 100; // Always 5% GST on received amount
   
   // Correct net profit: Received - GST(5%) - Vendor - Deduction - CF - Expenses
   // TDS is NOT deducted — already deducted in received amount
