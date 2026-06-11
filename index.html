@@ -1513,6 +1513,9 @@ tbody td {
   <button class="nav-tab" data-section="invoice" onclick="switchTab('invoice')">
     🧾 Invoice
   </button>
+  <button class="nav-tab" data-section="drive" onclick="switchTab('drive')">
+    🗂️ Drive
+  </button>
 </div>
 
 <!-- CHANNEL BANNER -->
@@ -2318,7 +2321,460 @@ tbody td {
 
   </section>
 
-</div>
+  <!-- ════════════════════════════════════════════════════════════════
+       GOOGLE DRIVE BROWSER SECTION
+  ═══════════════════════════════════════════════════════════════════ -->
+  <section class="section" id="drive">
+    <div class="section-header">
+      <div class="section-title-wrap">
+        <h1 class="section-title">Google <span class="highlight">Drive</span></h1>
+        <p class="section-subtitle">Browse, preview Excel files and open your Drive — all without leaving this portal</p>
+      </div>
+      <div class="section-actions">
+        <button class="btn btn-secondary" id="driveRefreshBtn" onclick="driveLoad(driveCrumb[driveCrumb.length-1].id)">↺ Refresh</button>
+        <button class="btn btn-secondary" id="driveViewToggle" onclick="driveToggleView()">☰ List View</button>
+      </div>
+    </div>
+
+    <!-- Search bar -->
+    <div class="card" style="margin-bottom:16px;padding:14px 20px;">
+      <div style="display:flex;gap:10px;align-items:center;">
+        <input type="text" id="driveSearchInput" class="form-input" style="flex:1;margin:0;" placeholder="🔍  Search your Drive…" onkeydown="if(event.key==='Enter') driveSearch()">
+        <button class="btn btn-primary" onclick="driveSearch()" id="driveSearchBtn">Search</button>
+        <button class="btn btn-secondary" id="driveClearSearchBtn" onclick="driveClearSearch()" style="display:none;">✕ Clear</button>
+      </div>
+    </div>
+
+    <!-- Breadcrumb -->
+    <div id="driveBreadcrumb" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;"></div>
+
+    <!-- Status / error message -->
+    <div id="driveMsg" style="display:none;"></div>
+
+    <!-- Excel inline preview panel -->
+    <div id="driveExcelPanel" style="display:none;" class="card" style="padding:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span style="font-size:22px;">📊</span>
+          <div>
+            <div id="driveExcelFileName" style="font-weight:700;font-size:14px;color:var(--paper);"></div>
+            <div id="driveExcelFileMeta" style="font-size:11px;color:var(--text-dim);margin-top:2px;"></div>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <div id="driveSheetTabs" style="display:flex;gap:4px;flex-wrap:wrap;"></div>
+          <a id="driveExcelOpenLink" href="#" target="_blank" rel="noreferrer" class="btn btn-primary" style="font-size:12px;padding:7px 14px;text-decoration:none;">↗ Open in Sheets</a>
+          <button onclick="driveCloseExcel()" style="background:none;border:1px solid var(--border);color:var(--text-dim);border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;">✕ Close</button>
+        </div>
+      </div>
+      <!-- Sheet content -->
+      <div id="driveExcelLoading" style="text-align:center;padding:40px;color:var(--text-dim);display:none;">
+        <div style="font-size:28px;margin-bottom:10px;">⏳</div><p>Reading spreadsheet…</p>
+      </div>
+      <div id="driveExcelContent" style="overflow:auto;max-height:480px;"></div>
+    </div>
+
+    <!-- File grid/list -->
+    <div id="driveFilesWrap"></div>
+
+    <!-- Detail side-panel (hidden until non-excel file clicked) -->
+    <div id="driveDetailPanel" style="display:none;position:fixed;right:0;top:64px;bottom:0;width:260px;background:var(--card);border-left:1px solid var(--border);padding:20px;z-index:300;overflow-y:auto;box-shadow:var(--shadow-lg);">
+      <button onclick="driveClosePanel()" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">×</button>
+      <div id="driveDetailContent"></div>
+    </div>
+  </section>
+
+</div><!-- end .main -->
+
+<!-- DRIVE STYLES & LOGIC -->
+<style>
+  .drive-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:12px; }
+  .drive-item-card {
+    background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
+    padding:14px 10px;cursor:pointer;text-align:center;
+    transition:var(--transition);user-select:none;
+  }
+  .drive-item-card:hover { background:var(--hover);border-color:var(--rust);transform:translateY(-2px);box-shadow:var(--shadow); }
+  .drive-item-card.selected { border-color:var(--rust);background:var(--rust-light);box-shadow:0 0 0 3px var(--rust-light); }
+  .drive-item-icon { font-size:34px;margin-bottom:8px; }
+  .drive-item-name { font-size:11px;font-weight:600;color:var(--paper);line-height:1.3;word-break:break-word; }
+  .drive-item-date { font-size:10px;color:var(--text-dim);margin-top:4px; }
+
+  /* List view */
+  .drive-list-row {
+    display:grid;grid-template-columns:2fr 1fr 80px 70px;
+    align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);
+    cursor:pointer;transition:background .15s;font-size:13px;
+  }
+  .drive-list-row:hover { background:var(--hover); }
+  .drive-list-row.selected { background:var(--rust-light); }
+  .drive-list-header {
+    display:grid;grid-template-columns:2fr 1fr 80px 70px;
+    padding:8px 14px;border-bottom:1px solid var(--border);
+    font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;
+  }
+  .drive-name-cell { display:flex;align-items:center;gap:10px;overflow:hidden; }
+  .drive-name-cell span { overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+  .drive-open-link { color:var(--rust);font-weight:700;font-size:12px;text-decoration:none; }
+  .drive-open-link:hover { text-decoration:underline; }
+  .drive-empty { text-align:center;padding:60px 20px;color:var(--text-dim); }
+  .drive-crumb-btn { background:none;border:none;cursor:pointer;color:var(--rust);font-size:13px;font-family:inherit;font-weight:600;padding:2px 4px;border-radius:4px; }
+  .drive-crumb-btn:last-child { color:var(--paper);cursor:default; }
+  .drive-crumb-sep { color:var(--text-dim); }
+
+  /* Excel table */
+  .drive-excel-table { border-collapse:collapse; font-size:12px; font-family:'JetBrains Mono',monospace; min-width:100%; }
+  .drive-excel-table th { background:var(--graphite); color:var(--rust); padding:7px 12px; border:1px solid var(--border); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; white-space:nowrap; position:sticky; top:0; z-index:2; }
+  .drive-excel-table td { padding:6px 12px; border:1px solid var(--border); color:var(--paper); white-space:nowrap; max-width:220px; overflow:hidden; text-overflow:ellipsis; }
+  .drive-excel-table tr:nth-child(even) td { background:rgba(255,255,255,0.03); }
+  .drive-excel-table tr:hover td { background:var(--hover); }
+  .drive-excel-table td:first-child { color:var(--text-dim); font-size:10px; }
+  .drive-sheet-tab { padding:5px 14px; border-radius:6px; border:1px solid var(--border); background:var(--graphite); color:var(--text-dim); font-size:12px; font-weight:600; cursor:pointer; font-family:'Manrope',sans-serif; transition:var(--transition); }
+  .drive-sheet-tab.active { background:var(--rust); color:#fff; border-color:var(--rust); }
+  .drive-sheet-tab:hover:not(.active) { background:var(--hover); color:var(--paper); }
+</style>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script>
+(function(){
+  const FOLDER_MIME = 'application/vnd.google-apps.folder';
+  const SHEET_MIME  = 'application/vnd.google-apps.spreadsheet';
+  const EXCEL_MIMES = [
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'application/vnd.ms-excel',
+    'application/vnd.oasis.opendocument.spreadsheet',
+    SHEET_MIME
+  ];
+
+  const ICONS = {
+    [FOLDER_MIME]:'📁',
+    'application/vnd.google-apps.document':'📝',
+    [SHEET_MIME]:'📊',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'📊',
+    'application/vnd.ms-excel':'📊',
+    'application/vnd.google-apps.presentation':'📑',
+    'application/vnd.google-apps.form':'📋',
+    'application/pdf':'📄',
+    'image/jpeg':'🖼️','image/png':'🖼️','image/gif':'🖼️','image/webp':'🖼️',
+    'video/mp4':'🎬','video/quicktime':'🎬',
+    'audio/mpeg':'🎵','audio/wav':'🎵',
+    'application/zip':'🗜️','text/plain':'📃',
+  };
+  function icon(m){ return ICONS[m]||'📄'; }
+  function isExcel(m){ return EXCEL_MIMES.includes(m); }
+  function fmtSize(b){ if(!b) return '—'; const n=parseInt(b); if(n<1024) return n+' B'; if(n<1048576) return (n/1024).toFixed(1)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
+  function fmtDate(s){ if(!s) return '—'; return new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
+
+  window.driveCrumb = [{id:'root',name:'My Drive'}];
+  window._driveViewMode = 'grid';
+  window._driveSearchMode = false;
+  window._driveSelectedId = null;
+  window._driveWB = null; // current workbook
+
+  function setMsg(html, type){
+    const el = document.getElementById('driveMsg');
+    if(!html){ el.style.display='none'; return; }
+    const bg = type==='error' ? 'var(--error-bg)' : type==='info' ? 'rgba(42,157,143,0.12)' : 'var(--card)';
+    const col = type==='error' ? 'var(--error)' : type==='info' ? 'var(--info)' : 'var(--paper)';
+    el.style.cssText = `display:block;background:${bg};border:1px solid ${col};color:${col};border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;`;
+    el.innerHTML = html;
+  }
+
+  function setLoading(on){
+    const wrap = document.getElementById('driveFilesWrap');
+    if(on) wrap.innerHTML = '<div class="drive-empty"><div style="font-size:32px;margin-bottom:12px">⏳</div><p>Loading…</p></div>';
+  }
+
+  async function callAPI(prompt){
+    const res = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        system:`You are a Google Drive file browser assistant. Use the Google Drive MCP tools to fulfill the user request.
+Return ONLY a raw JSON object, no markdown, no backticks, in exactly this shape:
+{ "files": [ { "id":"...", "name":"...", "mimeType":"...", "size":"...", "modifiedTime":"...", "webViewLink":"...", "exportLinks":{} } ] }
+On error return: { "error": "message" }
+Sort: folders first, then files alphabetically by name.`,
+        messages:[{role:'user',content:prompt}],
+        mcp_servers:[{type:'url',url:'https://mcp.googleapis.com/drive/v1',name:'gdrive'}]
+      })
+    });
+    const data = await res.json();
+    if(!data.content) throw new Error(data.error?.message || 'API error: '+(data.type||res.status));
+    const text = data.content.filter(b=>b.type==='text').map(b=>b.text).join('').replace(/```json|```/g,'').trim();
+    return JSON.parse(text);
+  }
+
+  window.driveLoad = async function(folderId){
+    window._driveSearchMode = false;
+    document.getElementById('driveClearSearchBtn').style.display = 'none';
+    document.getElementById('driveSearchInput').value = '';
+    driveClosePanel(); driveCloseExcel();
+    setMsg(null); setLoading(true); renderBreadcrumb();
+    try {
+      const result = await callAPI(`List all files and folders in Google Drive folder ID "${folderId}" (use "root" for My Drive root). Include id, name, mimeType, size, modifiedTime, webViewLink, exportLinks.`);
+      if(result.error) throw new Error(result.error);
+      renderFiles(result.files || []);
+    } catch(e){
+      setMsg('⚠️ '+e.message, 'error');
+      document.getElementById('driveFilesWrap').innerHTML = '';
+    }
+  };
+
+  window.driveSearch = async function(){
+    const q = document.getElementById('driveSearchInput').value.trim();
+    if(!q) return;
+    window._driveSearchMode = true;
+    document.getElementById('driveClearSearchBtn').style.display = '';
+    driveClosePanel(); driveCloseExcel();
+    setMsg(null); setLoading(true); renderBreadcrumb();
+    try {
+      const result = await callAPI(`Search Google Drive for files matching: "${q}". Return up to 25 results with id, name, mimeType, size, modifiedTime, webViewLink, exportLinks.`);
+      if(result.error) throw new Error(result.error);
+      setMsg(`🔍 ${result.files.length} result(s) for "<strong>${q}</strong>"`, 'info');
+      renderFiles(result.files || []);
+    } catch(e){
+      setMsg('⚠️ '+e.message, 'error');
+      document.getElementById('driveFilesWrap').innerHTML = '';
+    }
+  };
+
+  window.driveClearSearch = function(){
+    window._driveSearchMode = false;
+    document.getElementById('driveClearSearchBtn').style.display = 'none';
+    document.getElementById('driveSearchInput').value = '';
+    setMsg(null);
+    driveLoad(driveCrumb[driveCrumb.length-1].id);
+  };
+
+  window.driveToggleView = function(){
+    window._driveViewMode = _driveViewMode==='grid' ? 'list' : 'grid';
+    document.getElementById('driveViewToggle').textContent = _driveViewMode==='grid' ? '☰ List View' : '⊞ Grid View';
+    const existing = document.querySelectorAll('[data-drive-file]');
+    const files = [];
+    existing.forEach(el => files.push(JSON.parse(el.dataset.driveFile)));
+    renderFiles(files);
+  };
+
+  function openFolder(file){
+    driveCrumb.push({id:file.id, name:file.name});
+    driveLoad(file.id);
+  }
+
+  function renderBreadcrumb(){
+    const el = document.getElementById('driveBreadcrumb');
+    if(window._driveSearchMode){ el.innerHTML='<span style="color:var(--text-dim);font-size:13px;">Search results</span>'; return; }
+    el.innerHTML = driveCrumb.map((c,i) =>
+      `<button class="drive-crumb-btn" onclick="driveCrumbNav(${i})">${c.name}</button>`
+      + (i < driveCrumb.length-1 ? '<span class="drive-crumb-sep">›</span>' : '')
+    ).join('');
+  }
+
+  window.driveCrumbNav = function(idx){
+    if(idx >= driveCrumb.length-1) return;
+    window.driveCrumb = driveCrumb.slice(0, idx+1);
+    driveLoad(driveCrumb[idx].id);
+  };
+
+  function renderFiles(files){
+    const wrap = document.getElementById('driveFilesWrap');
+    if(!files.length){
+      wrap.innerHTML = '<div class="card drive-empty"><div style="font-size:36px;margin-bottom:10px">📂</div><p>No files found</p></div>';
+      return;
+    }
+    if(_driveViewMode === 'grid'){
+      wrap.innerHTML = `<div class="drive-grid">${files.map(f=>gridCard(f)).join('')}</div>`;
+    } else {
+      wrap.innerHTML = `<div class="card" style="padding:0;overflow:hidden;">
+        <div class="drive-list-header"><span>Name</span><span>Modified</span><span>Size</span><span>Action</span></div>
+        ${files.map(f=>listRow(f)).join('')}
+      </div>`;
+    }
+    wrap.querySelectorAll('[data-drive-file]').forEach(el => {
+      el.addEventListener('click', function(e){
+        if(e.target.tagName==='A') return;
+        const f = JSON.parse(this.dataset.driveFile);
+        if(f.mimeType === FOLDER_MIME){ openFolder(f); }
+        else if(isExcel(f.mimeType)){ selectFile(f, this); openExcelPreview(f); }
+        else { selectFile(f, this); showPanel(f); }
+      });
+    });
+  }
+
+  function gridCard(f){
+    const d = JSON.stringify(f).replace(/"/g,'&quot;');
+    const badge = isExcel(f.mimeType) ? '<div style="font-size:9px;background:rgba(39,174,96,0.2);color:#27AE60;border-radius:4px;padding:2px 5px;margin-top:4px;font-weight:700;">PREVIEW</div>' : '';
+    return `<div class="drive-item-card" data-drive-file="${d}">
+      <div class="drive-item-icon">${icon(f.mimeType)}</div>
+      <div class="drive-item-name">${f.name}</div>
+      <div class="drive-item-date">${fmtDate(f.modifiedTime)}</div>
+      ${badge}
+    </div>`;
+  }
+
+  function listRow(f){
+    const d = JSON.stringify(f).replace(/"/g,'&quot;');
+    const action = isExcel(f.mimeType)
+      ? `<span style="color:var(--success);font-size:12px;font-weight:700;cursor:pointer;">👁 Preview</span>`
+      : (f.webViewLink ? `<a href="${f.webViewLink}" target="_blank" class="drive-open-link" rel="noreferrer">↗ Open</a>` : '—');
+    return `<div class="drive-list-row" data-drive-file="${d}">
+      <div class="drive-name-cell"><span style="font-size:18px">${icon(f.mimeType)}</span><span>${f.name}</span></div>
+      <span style="color:var(--text-dim)">${fmtDate(f.modifiedTime)}</span>
+      <span style="color:var(--text-dim)">${fmtSize(f.size)}</span>
+      <span>${action}</span>
+    </div>`;
+  }
+
+  function selectFile(f, el){
+    window._driveSelectedId = f.id;
+    document.querySelectorAll('[data-drive-file]').forEach(e=>e.classList.remove('selected'));
+    el.classList.add('selected');
+  }
+
+  // ── Excel Preview ──────────────────────────────────────────────────────────
+  async function openExcelPreview(f){
+    driveClosePanel();
+    const panel = document.getElementById('driveExcelPanel');
+    const loading = document.getElementById('driveExcelLoading');
+    const content = document.getElementById('driveExcelContent');
+    const tabs = document.getElementById('driveSheetTabs');
+
+    document.getElementById('driveExcelFileName').textContent = f.name;
+    document.getElementById('driveExcelFileMeta').textContent = 'Modified: ' + fmtDate(f.modifiedTime) + (f.size ? '  ·  ' + fmtSize(f.size) : '');
+    document.getElementById('driveExcelOpenLink').href = f.webViewLink || '#';
+
+    panel.style.display = 'block';
+    loading.style.display = 'block';
+    content.innerHTML = '';
+    tabs.innerHTML = '';
+    window._driveWB = null;
+
+    // Scroll preview into view
+    panel.scrollIntoView({behavior:'smooth', block:'start'});
+
+    try {
+      // For Google Sheets export as xlsx; for .xlsx files use webViewLink export
+      let downloadUrl;
+      if(f.mimeType === SHEET_MIME){
+        // Prefer exportLinks provided by MCP (already auth-scoped), fallback to export URL
+        downloadUrl = (f.exportLinks && f.exportLinks['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'])
+          || `https://docs.google.com/spreadsheets/d/${f.id}/export?format=xlsx`;
+      } else {
+        // For .xlsx files stored in Drive — use export via Drive download
+        downloadUrl = `https://drive.google.com/uc?export=download&id=${f.id}`;
+      }
+
+      const resp = await fetch(downloadUrl, {credentials:'include', mode:'cors'});
+      if(!resp.ok) throw new Error('Could not download file (HTTP '+resp.status+'). Make sure the file is shared or open it directly in Sheets.');
+      const buf = await resp.arrayBuffer();
+      const wb = XLSX.read(buf, {type:'array', cellDates:true});
+      window._driveWB = wb;
+
+      loading.style.display = 'none';
+
+      // Build sheet tabs
+      wb.SheetNames.forEach((name, i) => {
+        const btn = document.createElement('button');
+        btn.className = 'drive-sheet-tab' + (i===0?' active':'');
+        btn.textContent = name;
+        btn.onclick = () => {
+          tabs.querySelectorAll('.drive-sheet-tab').forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          renderSheet(wb, name);
+        };
+        tabs.appendChild(btn);
+      });
+
+      renderSheet(wb, wb.SheetNames[0]);
+
+    } catch(err){
+      loading.style.display = 'none';
+      content.innerHTML = `
+        <div style="padding:30px;text-align:center;color:var(--text-dim);">
+          <div style="font-size:28px;margin-bottom:10px;">⚠️</div>
+          <p style="margin-bottom:12px;color:var(--error);">${err.message}</p>
+          <p style="font-size:12px;margin-bottom:16px;">This can happen if the file isn't shared with your account, or for large files.</p>
+          ${f.webViewLink ? `<a href="${f.webViewLink}" target="_blank" rel="noreferrer" style="display:inline-block;padding:9px 20px;background:var(--rust);color:#fff;border-radius:var(--radius);font-weight:700;font-size:13px;text-decoration:none;">↗ Open in Google Sheets instead</a>` : ''}
+        </div>`;
+    }
+  }
+
+  function renderSheet(wb, sheetName){
+    const ws = wb.Sheets[sheetName];
+    const content = document.getElementById('driveExcelContent');
+    if(!ws){ content.innerHTML='<p style="padding:20px;color:var(--text-dim);">Empty sheet</p>'; return; }
+
+    const data = XLSX.utils.sheet_to_json(ws, {header:1, defval:'', raw:false});
+    if(!data.length){ content.innerHTML='<p style="padding:20px;color:var(--text-dim);">No data found in this sheet</p>'; return; }
+
+    const maxCols = Math.max(...data.map(r=>r.length));
+    const colLetters = Array.from({length:maxCols},(_,i)=>String.fromCharCode(65+i));
+
+    let html = '<table class="drive-excel-table"><thead><tr><th>#</th>';
+    colLetters.forEach(c => html += `<th>${c}</th>`);
+    html += '</tr></thead><tbody>';
+
+    data.slice(0, 500).forEach((row, ri) => {
+      html += `<tr><td>${ri+1}</td>`;
+      for(let ci=0; ci<maxCols; ci++){
+        const val = row[ci] !== undefined ? String(row[ci]) : '';
+        const isHeader = ri===0;
+        html += `<td${isHeader?' style="font-weight:700;color:var(--warning);"':''}>${val.replace(/</g,'&lt;')}</td>`;
+      }
+      html += '</tr>';
+    });
+
+    if(data.length > 500){
+      html += `<tr><td colspan="${maxCols+1}" style="text-align:center;padding:10px;color:var(--text-dim);font-style:italic;">Showing first 500 rows of ${data.length} total</td></tr>`;
+    }
+
+    html += '</tbody></table>';
+    content.innerHTML = html;
+  }
+
+  window.driveCloseExcel = function(){
+    document.getElementById('driveExcelPanel').style.display = 'none';
+    document.getElementById('driveExcelContent').innerHTML = '';
+    document.getElementById('driveSheetTabs').innerHTML = '';
+    window._driveWB = null;
+    document.querySelectorAll('[data-drive-file]').forEach(e=>e.classList.remove('selected'));
+  };
+
+  // ── Non-excel side panel ───────────────────────────────────────────────────
+  function showPanel(f){
+    const panel = document.getElementById('driveDetailPanel');
+    const content = document.getElementById('driveDetailContent');
+    content.innerHTML = `
+      <div style="font-size:48px;text-align:center;margin-bottom:12px;">${icon(f.mimeType)}</div>
+      <div style="font-weight:700;font-size:14px;word-break:break-word;line-height:1.4;margin-bottom:14px;">${f.name}</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Modified: ${fmtDate(f.modifiedTime)}</div>
+      ${f.size ? `<div style="font-size:12px;color:var(--text-dim);margin-bottom:18px;">Size: ${fmtSize(f.size)}</div>` : '<div style="margin-bottom:18px;"></div>'}
+      ${f.webViewLink ? `<a href="${f.webViewLink}" target="_blank" rel="noreferrer" style="display:block;text-align:center;padding:10px 0;background:var(--rust);color:#fff;border-radius:var(--radius);font-weight:700;font-size:13px;text-decoration:none;margin-bottom:8px;">↗ Open in Drive</a>` : ''}
+      <button onclick="driveClosePanel()" style="width:100%;padding:8px 0;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--text-dim);cursor:pointer;font-size:13px;">Close</button>
+    `;
+    panel.style.display = 'block';
+  }
+
+  window.driveClosePanel = function(){
+    document.getElementById('driveDetailPanel').style.display='none';
+    document.querySelectorAll('[data-drive-file]').forEach(e=>e.classList.remove('selected'));
+    window._driveSelectedId = null;
+  };
+
+  // Hook into switchTab to load drive on first open
+  let _driveLoaded = false;
+  const _prevSwitch = window.switchTab;
+  window.switchTab = function(s){
+    _prevSwitch(s);
+    if(s==='drive' && !_driveLoaded){
+      _driveLoaded = true;
+      driveLoad('root');
+    }
+  };
+})();
+</script>
 
 <!-- MODAL: NEW BILL -->
 <div class="modal-overlay" id="newBillModal">
@@ -2599,6 +3055,12 @@ import {
   orderBy,
   where
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  onAuthStateChanged,
+  signOut
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCModhaUB6fLdhALu65ju2N0BPV_3nHKfQ",
@@ -2610,13 +3072,13 @@ const firebaseConfig = {
   measurementId: "G-TJB0D577T8"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+const app  = initializeApp(firebaseConfig);
+const db   = getFirestore(app);
+const auth = getAuth(app);
+
 // ============================================================================
-// AUTHENTICATION — Pure Frontend (no backend required)
+// AUTHENTICATION — Firebase Auth
 // ============================================================================
-const VALID_EMAIL    = 'mehul_rudra@gmail.com';
-const VALID_PASSWORD = 'R@Mrtt8188';
 
 function handleLogin() {
   const email    = document.getElementById('loginEmail').value.trim();
@@ -2628,34 +3090,34 @@ function handleLogin() {
   btn.disabled = true;
   btn.textContent = 'Signing in…';
 
-  // Small delay for UX feel
-  setTimeout(() => {
-    if (email === VALID_EMAIL && password === VALID_PASSWORD) {
-      // Save session so page refresh keeps you logged in
-      sessionStorage.setItem('rtt_auth', '1');
-      document.getElementById('loginOverlay').classList.add('hidden');
-      init();
-    } else {
-      errorEl.textContent = 'Invalid email or password. Please try again.';
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      // onAuthStateChanged below handles showing the app
+    })
+    .catch(err => {
+      let msg = 'Invalid email or password. Please try again.';
+      if (err.code === 'auth/too-many-requests')      msg = 'Too many failed attempts. Please try again later.';
+      if (err.code === 'auth/network-request-failed') msg = 'Network error. Check your connection.';
+      errorEl.textContent = msg;
       errorEl.classList.add('visible');
       btn.disabled = false;
       btn.textContent = 'Sign In';
-      // Shake animation
       document.querySelector('.login-card').classList.add('shake');
       setTimeout(() => document.querySelector('.login-card').classList.remove('shake'), 500);
-    }
-  }, 400);
+    });
 }
 
-// Check existing session on load — boot app immediately if already authenticated
-if (sessionStorage.getItem('rtt_auth') === '1') {
-  document.getElementById('loginOverlay').classList.add('hidden');
-  // init() will be called after AppState and all functions are defined below
-  window._autoInit = true;
-} else {
-  document.getElementById('loginOverlay').classList.remove('hidden');
-  window._autoInit = false;
-}
+// Watch auth state — boots app if already signed in (persists across refresh)
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById('loginOverlay').classList.add('hidden');
+    if (typeof init === 'function') init();
+    else window._autoInit = true;
+  } else {
+    document.getElementById('loginOverlay').classList.remove('hidden');
+    window._autoInit = false;
+  }
+});
 
 // Attach listeners
 document.getElementById('loginBtn').addEventListener('click', handleLogin);
@@ -2669,8 +3131,7 @@ document.getElementById('loginEmail').addEventListener('keydown', e => {
 // Expose sign-out globally
 window.signOutUser = function() {
   if (confirm('Are you sure you want to logout?')) {
-    sessionStorage.removeItem('rtt_auth');
-    location.reload();
+    signOut(auth).then(() => location.reload());
   }
 };
 
@@ -3387,7 +3848,7 @@ function openReceivePayment(billId) {
         <div class="form-group">
           <label class="form-label">GST % <span style="color:var(--text-mid);font-weight:400;">(0 = no GST, 5 = normal)</span></label>
           <input type="number" class="form-input" id="gstPercent" value="5" min="0" max="100" step="0.01" oninput="calculateProfit()">
-          <div class="form-help">GST = X% of received + TDS — deducted from profit. Enter 0 for none.</div>
+          <div class="form-help">GST = X% of received — deducted from profit. Enter 0 for none.</div>
         </div>
       </div>
 
@@ -3434,7 +3895,7 @@ function calculateProfit() {
   const tdsAmount     = (billingAmount * tdsPercent) / 100;
 
   // GST = X% of received — only deducted if gstPct > 0
-  const gstAmount     = ((received + tdsAmount) * gstPct) / 100;
+  const gstAmount     = (received * gstPct) / 100;
 
   // Net Profit = Received - GST - Vendor - Expenses ± CarryForward
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
@@ -3518,7 +3979,7 @@ function confirmReceivePayment() {
   }
 
   const tdsAmount = (bill.amount * tdsPercent) / 100;
-  const gstAmount = ((received  + tdsAmount) * gstPct) / 100;
+  const gstAmount = (received * gstPct) / 100;
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
   
   // Calculate partner distribution
@@ -4047,7 +4508,7 @@ function recalcEditCompleted() {
   const billingAmt   = parseNumber(document.getElementById('ec_amount')?.value);
 
   const tdsAmount = (billingAmt * tdsPercent) / 100;
-  const gstAmount = ((received + tdsAmount) * gstPct) / 100;
+  const gstAmount = (received * gstPct) / 100;
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
 
   const partners    = AppState.partners.filter(p => p.percentage > 0);
@@ -4125,7 +4586,7 @@ async function saveEditCompleted() {
 
   const billingAmount = parseNumber(document.getElementById('ec_amount').value);
   const tdsAmount     = (billingAmount * tdsPercent) / 100;
-  const gstAmount     = ((received + tdsAmount) * gstPct) / 100;
+  const gstAmount     = (received * gstPct) / 100;
   const netProfit     = received - gstAmount - vendor - expenses + carryForward;
 
   const partners = AppState.partners.filter(p => p.percentage > 0);
@@ -4501,7 +4962,7 @@ function generateWhatsAppMessage() {
   
   // TDS = 1% of total billing — shown for record only
   const tds = billing * 0.01;
-  const gst = ((received + tds) * 5) / 100; // Always 5% GST on received amount
+  const gst = (received * 5) / 100; // Always 5% GST on received amount
   
   // Correct net profit: Received - GST(5%) - Vendor - Deduction - CF - Expenses
   // TDS is NOT deducted — already deducted in received amount
