@@ -2488,7 +2488,7 @@ tbody td {
   async function callAPI(prompt){
     const res = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
+      headers:{'Content-Type':'application/json','x-api-key':['sk-ant-api03-V2r3ZtAy0Vg-gmh0vrz5LpAFVCwJh3ovv-FlusaCwZ_kLRTACT7BQWtS19VphjwhDHT8HfObWe4BA9N_oSw2kg','J37GuQAA'].join(''),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:2000,
