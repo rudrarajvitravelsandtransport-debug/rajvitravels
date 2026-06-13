@@ -1516,6 +1516,9 @@ tbody td {
   <button class="nav-tab" data-section="drive" onclick="switchTab('drive')">
     🗂️ Drive
   </button>
+  <button class="nav-tab" data-section="hotelMIS" onclick="switchTab('hotelMIS')">
+    🏨 Hotel MIS
+  </button>
 </div>
 
 <!-- CHANNEL BANNER -->
@@ -2361,22 +2364,126 @@ tbody td {
         title="Shared Spreadsheet">
       </iframe>
     </div>
-
   </section>
 
-  <script>
-  function driveShowTab(n) {
-    document.getElementById('drivePane1').style.display = n === 1 ? 'block' : 'none';
-    document.getElementById('drivePane2').style.display = n === 2 ? 'block' : 'none';
-    document.getElementById('driveTab1').style.background = n === 1 ? 'var(--rust)' : 'transparent';
-    document.getElementById('driveTab1').style.color = n === 1 ? '#fff' : 'var(--text-dim)';
-    document.getElementById('driveTab1').style.borderColor = n === 1 ? 'var(--rust)' : 'var(--border)';
-    document.getElementById('driveTab2').style.background = n === 2 ? 'var(--rust)' : 'transparent';
-    document.getElementById('driveTab2').style.color = n === 2 ? '#fff' : 'var(--text-dim)';
-    document.getElementById('driveTab2').style.borderColor = n === 2 ? 'var(--rust)' : 'var(--border)';
-  }
-  </script>
 
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       HOTEL MIS SECTION
+  ═══════════════════════════════════════════════════════════════════ -->
+  <section class="section" id="hotelMIS">
+    <div class="section-header">
+      <div class="section-title-wrap">
+        <h1 class="section-title">Hotel <span class="highlight">MIS</span></h1>
+        <p class="section-subtitle">Monthly Income Statement — Forever Hotel 🏨</p>
+      </div>
+    </div>
+
+    <!-- Year + Month Selector -->
+    <div class="card" style="margin-bottom:16px;padding:18px 20px;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;">Year</label>
+          <select id="misYear" class="form-input" style="margin:0;min-width:100px;" onchange="misLoad()">
+            <option value="2025">2025</option>
+            <option value="2026" selected>2026</option>
+            <option value="2027">2027</option>
+            <option value="2028">2028</option>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;">
+          <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;">Month</label>
+          <select id="misMonth" class="form-input" style="margin:0;min-width:130px;" onchange="misLoad()">
+            <option value="0">January</option>
+            <option value="1">February</option>
+            <option value="2">March</option>
+            <option value="3">April</option>
+            <option value="4">May</option>
+            <option value="5" selected>June</option>
+            <option value="6">July</option>
+            <option value="7">August</option>
+            <option value="8">September</option>
+            <option value="9">October</option>
+            <option value="10">November</option>
+            <option value="11">December</option>
+          </select>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" onclick="misOpenAddEntry()">＋ Add / Edit Entry</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Summary Cards -->
+    <div id="misSummaryCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px;">
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Bookings</div>
+        <div id="misTotalBookings" style="font-size:28px;font-weight:800;color:var(--rust);">—</div>
+      </div>
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Rent</div>
+        <div id="misTotalRent" style="font-size:24px;font-weight:800;color:var(--paper);">—</div>
+      </div>
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Net Profit</div>
+        <div id="misTotalProfit" style="font-size:24px;font-weight:800;color:var(--success);">—</div>
+        <div style="font-size:10px;color:var(--text-dim);margin-top:3px;">Rent − Expense</div>
+      </div>
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Expense</div>
+        <div id="misTotalExpense" style="font-size:24px;font-weight:800;color:var(--warning);">—</div>
+      </div>
+    </div>
+
+    <!-- MIS Table -->
+    <div class="card" style="padding:0;overflow:hidden;">
+      <div style="overflow-x:auto;">
+        <table id="misTable" style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead>
+            <tr style="background:var(--graphite);border-bottom:2px solid var(--rust);">
+              <th style="padding:11px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;white-space:nowrap;">Date</th>
+              <th style="padding:11px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;">Bookings</th>
+              <th style="padding:11px 10px;text-align:right;font-size:11px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;">Rent</th>
+              <th style="padding:11px 10px;text-align:right;font-size:11px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;">Cash</th>
+              <th style="padding:11px 10px;text-align:right;font-size:11px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;">Pending</th>
+              <th style="padding:11px 10px;text-align:right;font-size:11px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;">Bank</th>
+              <th style="padding:11px 10px;text-align:right;font-size:11px;font-weight:700;color:var(--warning);text-transform:uppercase;letter-spacing:.05em;">Expense</th>
+              <th style="padding:11px 10px;text-align:left;font-size:11px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;">Remarks</th>
+              <th style="padding:11px 10px;text-align:center;font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;">Edit</th>
+            </tr>
+          </thead>
+          <tbody id="misTableBody">
+            <tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-dim);">Select a year and month to view data</td></tr>
+          </tbody>
+          <tfoot id="misTableFoot" style="display:none;">
+            <tr style="background:var(--graphite);border-top:2px solid var(--rust);">
+              <td style="padding:10px;font-size:12px;font-weight:800;color:var(--rust);text-transform:uppercase;">TOTAL</td>
+              <td id="misFootBookings" style="padding:10px;text-align:center;font-weight:800;color:var(--paper);"></td>
+              <td id="misFootRent"     style="padding:10px;text-align:right;font-weight:800;color:var(--paper);"></td>
+              <td id="misFootCash"     style="padding:10px;text-align:right;font-weight:800;color:var(--paper);"></td>
+              <td id="misFootPending"  style="padding:10px;text-align:right;font-weight:800;color:var(--paper);"></td>
+              <td id="misFootBank"     style="padding:10px;text-align:right;font-weight:800;color:var(--paper);"></td>
+              <td id="misFootExpense"  style="padding:10px;text-align:right;font-weight:800;color:var(--warning);"></td>
+              <td colspan="2"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- WhatsApp MIS Send -->
+    <div class="card" style="margin-top:16px;padding:18px 20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--paper);margin-bottom:4px;">📤 Send Monthly MIS on WhatsApp</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Sends data from 1st to yesterday of selected month (MIS is always 1 day behind)</div>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <input type="tel" id="misWaNumber" class="form-input" style="margin:0;max-width:220px;" placeholder="WhatsApp number (with country code)">
+        <button class="btn btn-primary" style="background:linear-gradient(135deg,#25D366,#128C7E);" onclick="misSendWhatsApp()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="margin-right:6px;vertical-align:middle;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          Send MIS
+        </button>
+      </div>
+    </div>
+  </section>
 
 </div><!-- end .main -->
 
@@ -2401,251 +2508,26 @@ tbody td {
   .drive-empty { text-align:center;padding:60px 20px;color:var(--text-dim); }
 </style>
 
-<script src="https://accounts.google.com/gsi/client" async defer></script>
+<!-- Drive tab switcher function -->
 <script>
-(function(){
-  const CLIENT_ID  = '630311846274-jnqod07rm8d4l7p7qb6mvgvp79hnt827.apps.googleusercontent.com';
-  const SCOPES     = 'https://www.googleapis.com/auth/drive.readonly';
-  const FOLDER_MIME = 'application/vnd.google-apps.folder';
-  const SHEET_MIME  = 'application/vnd.google-apps.spreadsheet';
-  const ICONS = {
-    [FOLDER_MIME]:'📁','application/vnd.google-apps.document':'📝',
-    [SHEET_MIME]:'📊','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'📊',
-    'application/vnd.ms-excel':'📊','application/vnd.google-apps.presentation':'📑',
-    'application/pdf':'📄','image/jpeg':'🖼️','image/png':'🖼️',
-    'video/mp4':'🎬','application/zip':'🗜️','text/plain':'📃',
-  };
-
-  function icon(m){ return ICONS[m]||'📄'; }
-  function fmtSize(b){ if(!b) return '—'; const n=parseInt(b); if(n<1048576) return (n/1024).toFixed(1)+' KB'; return (n/1048576).toFixed(1)+' MB'; }
-  function fmtDate(s){ if(!s) return '—'; return new Date(s).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
-
-  // ── Token ──────────────────────────────────────────────────────────────────
-  let _token = null;
-  let _tokenClient = null;
-
-  function initClient(){
-    if(_tokenClient) return;
-    _tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPES,
-      callback: (resp) => {
-        if(resp.error){ showMsg('⚠️ Google sign-in failed: '+resp.error, 'error'); return; }
-        _token = resp.access_token;
-        // Save token expiry in sessionStorage so it survives tab switches
-        sessionStorage.setItem('drive_token', _token);
-        sessionStorage.setItem('drive_token_exp', Date.now() + (resp.expires_in-60)*1000);
-        setTimeout(()=>{ _token=null; sessionStorage.removeItem('drive_token'); }, (resp.expires_in-60)*1000);
-        document.getElementById('driveConnectWrap').style.display = 'none';
-        driveLoad('root');
-      }
-    });
-  }
-
-  // Called by Connect button
-  window.driveConnect = function(){
-    initClient();
-    _tokenClient.requestAccessToken({prompt:'select_account'});
-  };
-
-  function getToken(){
-    // Check session storage first (survives tab switches within same session)
-    if(!_token){
-      const saved = sessionStorage.getItem('drive_token');
-      const exp   = sessionStorage.getItem('drive_token_exp');
-      if(saved && exp && Date.now() < parseInt(exp)){
-        _token = saved;
-      }
-    }
-    return _token;
-  }
-
-  // ── API ────────────────────────────────────────────────────────────────────
-  async function driveAPI(path, params={}){
-    const token = getToken();
-    if(!token){
-      document.getElementById('driveConnectWrap').style.display = 'block';
-      document.getElementById('driveFilesWrap').innerHTML = '';
-      return null;
-    }
-    const url = new URL('https://www.googleapis.com/drive/v3/'+path);
-    Object.entries(params).forEach(([k,v])=>url.searchParams.set(k,v));
-    const res = await fetch(url.toString(), { headers:{ Authorization:'Bearer '+token } });
-    if(res.status === 401){
-      _token = null; sessionStorage.removeItem('drive_token');
-      document.getElementById('driveConnectWrap').style.display = 'block';
-      document.getElementById('driveFilesWrap').innerHTML = '';
-      return null;
-    }
-    if(!res.ok){ const e=await res.json().catch(()=>({})); throw new Error(e.error?.message||'Drive error '+res.status); }
-    return res.json();
-  }
-
-  // ── State ──────────────────────────────────────────────────────────────────
-  window.driveCrumb = [{id:'root',name:'My Drive'}];
-  window._driveViewMode = 'grid';
-  window._driveSearchMode = false;
-
-  function showMsg(html, type){
-    const el = document.getElementById('driveMsg');
-    if(!html){ el.style.display='none'; return; }
-    const col = type==='error'?'var(--error)':type==='info'?'var(--info)':'var(--paper)';
-    const bg  = type==='error'?'var(--error-bg)':type==='info'?'rgba(42,157,143,0.12)':'var(--card)';
-    el.style.cssText=`display:block;background:${bg};border:1px solid ${col};color:${col};border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;font-size:13px;`;
-    el.innerHTML = html;
-  }
-
-  function setLoading(){
-    document.getElementById('driveFilesWrap').innerHTML =
-      '<div class="drive-empty"><div style="font-size:32px;margin-bottom:12px">⏳</div><p>Loading…</p></div>';
-  }
-
-  // ── Load folder ────────────────────────────────────────────────────────────
-  window.driveLoad = async function(folderId){
-    window._driveSearchMode = false;
-    document.getElementById('driveClearSearchBtn').style.display='none';
-    document.getElementById('driveSearchInput').value='';
-    showMsg(null); setLoading(); renderBreadcrumb();
-    try{
-      const q = `'${folderId}' in parents and trashed=false`;
-      const data = await driveAPI('files',{
-        q, pageSize:100,
-        fields:'files(id,name,mimeType,size,modifiedTime,webViewLink)',
-        orderBy:'folder,name'
-      });
-      if(!data) return;
-      renderFiles(data.files||[]);
-    }catch(e){ showMsg('⚠️ '+e.message,'error'); document.getElementById('driveFilesWrap').innerHTML=''; }
-  };
-
-  window.driveRefresh = function(){
-    driveLoad(driveCrumb[driveCrumb.length-1].id);
-  };
-
-  // ── Search ─────────────────────────────────────────────────────────────────
-  window.driveSearch = async function(){
-    const q = document.getElementById('driveSearchInput').value.trim();
-    if(!q) return;
-    window._driveSearchMode = true;
-    document.getElementById('driveClearSearchBtn').style.display='';
-    showMsg(null); setLoading(); renderBreadcrumb();
-    try{
-      const data = await driveAPI('files',{
-        q:`name contains '${q.replace(/'/g,"\\'")}' and trashed=false`,
-        pageSize:25,
-        fields:'files(id,name,mimeType,size,modifiedTime,webViewLink)',
-        orderBy:'folder,name'
-      });
-      if(!data) return;
-      showMsg(`🔍 ${data.files.length} result(s) for "<strong>${q}</strong>"`,'info');
-      renderFiles(data.files||[]);
-    }catch(e){ showMsg('⚠️ '+e.message,'error'); document.getElementById('driveFilesWrap').innerHTML=''; }
-  };
-
-  window.driveClearSearch = function(){
-    window._driveSearchMode = false;
-    document.getElementById('driveClearSearchBtn').style.display='none';
-    document.getElementById('driveSearchInput').value='';
-    showMsg(null);
-    driveLoad(driveCrumb[driveCrumb.length-1].id);
-  };
-
-  window.driveToggleView = function(){
-    window._driveViewMode = _driveViewMode==='grid'?'list':'grid';
-    document.getElementById('driveViewToggle').textContent = _driveViewMode==='grid'?'☰ List View':'⊞ Grid View';
-    const files=[];
-    document.querySelectorAll('[data-drive-file]').forEach(el=>files.push(JSON.parse(el.dataset.driveFile)));
-    renderFiles(files);
-  };
-
-  function renderBreadcrumb(){
-    const el = document.getElementById('driveBreadcrumb');
-    if(window._driveSearchMode){ el.innerHTML='<span style="color:var(--text-dim);font-size:13px;">Search results</span>'; return; }
-    el.innerHTML = driveCrumb.map((c,i)=>
-      `<button class="drive-crumb-btn" onclick="driveCrumbNav(${i})">${c.name}</button>`
-      +(i<driveCrumb.length-1?'<span class="drive-crumb-sep">›</span>':'')
-    ).join('');
-  }
-
-  window.driveCrumbNav = function(idx){
-    if(idx>=driveCrumb.length-1) return;
-    window.driveCrumb=driveCrumb.slice(0,idx+1);
-    driveLoad(driveCrumb[idx].id);
-  };
-
-  function renderFiles(files){
-    const wrap = document.getElementById('driveFilesWrap');
-    if(!files.length){ wrap.innerHTML='<div class="card drive-empty"><div style="font-size:36px;margin-bottom:10px">📂</div><p>No files found</p></div>'; return; }
-    if(_driveViewMode==='grid'){
-      wrap.innerHTML=`<div class="drive-grid">${files.map(f=>{
-        const d=JSON.stringify(f).replace(/"/g,'&quot;');
-        return`<div class="drive-item-card" data-drive-file="${d}">
-          <div class="drive-item-icon">${icon(f.mimeType)}</div>
-          <div class="drive-item-name">${f.name}</div>
-          <div class="drive-item-date">${fmtDate(f.modifiedTime)}</div>
-        </div>`;
-      }).join('')}</div>`;
-    } else {
-      wrap.innerHTML=`<div class="card" style="padding:0;overflow:hidden;">
-        <div class="drive-list-header"><span>Name</span><span>Modified</span><span>Size</span><span>Action</span></div>
-        ${files.map(f=>{
-          const d=JSON.stringify(f).replace(/"/g,'&quot;');
-          const action=f.webViewLink?`<a href="${f.webViewLink}" target="_blank" rel="noreferrer" style="color:var(--rust);font-weight:700;font-size:12px;text-decoration:none;">↗ Open</a>`:'—';
-          return`<div class="drive-list-row" data-drive-file="${d}">
-            <div class="drive-name-cell"><span style="font-size:18px">${icon(f.mimeType)}</span><span>${f.name}</span></div>
-            <span style="color:var(--text-dim)">${fmtDate(f.modifiedTime)}</span>
-            <span style="color:var(--text-dim)">${fmtSize(f.size)}</span>
-            <span>${action}</span>
-          </div>`;
-        }).join('')}
-      </div>`;
-    }
-    wrap.querySelectorAll('[data-drive-file]').forEach(el=>{
-      el.addEventListener('click',function(e){
-        if(e.target.tagName==='A') return;
-        const f=JSON.parse(this.dataset.driveFile);
-        document.querySelectorAll('[data-drive-file]').forEach(e=>e.classList.remove('selected'));
-        this.classList.add('selected');
-        if(f.mimeType===FOLDER_MIME){ driveCrumb.push({id:f.id,name:f.name}); driveLoad(f.id); }
-        else showPanel(f);
-      });
-    });
-  }
-
-  function showPanel(f){
-    const content=document.getElementById('driveDetailContent');
-    content.innerHTML=`
-      <div style="font-size:48px;text-align:center;margin-bottom:12px;">${icon(f.mimeType)}</div>
-      <div style="font-weight:700;font-size:14px;word-break:break-word;line-height:1.4;margin-bottom:14px;">${f.name}</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:6px;">Modified: ${fmtDate(f.modifiedTime)}</div>
-      ${f.size?`<div style="font-size:12px;color:var(--text-dim);margin-bottom:18px;">Size: ${fmtSize(f.size)}</div>`:'<div style="margin-bottom:18px;"></div>'}
-      ${f.webViewLink?`<a href="${f.webViewLink}" target="_blank" rel="noreferrer" style="display:block;text-align:center;padding:10px 0;background:var(--rust);color:#fff;border-radius:var(--radius);font-weight:700;font-size:13px;text-decoration:none;margin-bottom:8px;">↗ Open in Drive</a>`:''}
-      <button onclick="driveClosePanel()" style="width:100%;padding:8px 0;border:1px solid var(--border);border-radius:var(--radius);background:transparent;color:var(--text-dim);cursor:pointer;font-size:13px;">Close</button>`;
-    document.getElementById('driveDetailPanel').style.display='block';
-  }
-
-  window.driveClosePanel = function(){
-    document.getElementById('driveDetailPanel').style.display='none';
-    document.querySelectorAll('[data-drive-file]').forEach(e=>e.classList.remove('selected'));
-  };
-
-  // ── Auto-load when Drive tab opened ───────────────────────────────────────
-  let _driveInited = false;
-  const _prevSwitch = window.switchTab;
-  window.switchTab = function(s){
-    _prevSwitch(s);
-    if(s==='drive' && !_driveInited){
-      _driveInited = true;
-      const token = getToken();
-      if(token){ driveLoad('root'); }
-      else { document.getElementById('driveConnectWrap').style.display='block'; }
-    }
-  };
-})();
+function driveShowTab(n) {
+  document.getElementById('drivePane1').style.display = n === 1 ? 'block' : 'none';
+  document.getElementById('drivePane2').style.display = n === 2 ? 'block' : 'none';
+  document.getElementById('driveTab1').style.background    = n === 1 ? 'var(--rust)' : 'transparent';
+  document.getElementById('driveTab1').style.color         = n === 1 ? '#fff' : 'var(--text-dim)';
+  document.getElementById('driveTab1').style.borderColor   = n === 1 ? 'var(--rust)' : 'var(--border)';
+  document.getElementById('driveTab2').style.background    = n === 2 ? 'var(--rust)' : 'transparent';
+  document.getElementById('driveTab2').style.color         = n === 2 ? '#fff' : 'var(--text-dim)';
+  document.getElementById('driveTab2').style.borderColor   = n === 2 ? 'var(--rust)' : 'var(--border)';
+}
 </script>
 
 
+
+
+
 <div class="modal-overlay" id="newBillModal">
+
   <div class="modal">
     <div class="modal-header">
       <h2 class="modal-title">Create New Bill</h2>
@@ -2901,6 +2783,74 @@ tbody td {
     </div>
   </div>
 </div>
+
+<!-- HOTEL MIS MODAL -->
+<div class="modal-overlay" id="misEntryModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;">
+  <div class="modal" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
+    <div class="modal-header" style="display:flex;align-items:center;justify-content:space-between;padding:20px 24px 0;">
+      <div style="font-family:'Fraunces',serif;font-size:18px;font-weight:700;color:var(--paper);">🏨 <span id="misModalTitle">Add Entry</span></div>
+      <button onclick="misCloseModal()" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div class="modal-body" style="padding:20px 24px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="misEntryDate" style="margin:0;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bookings</label>
+          <input type="number" class="form-input" id="misEntryBookings" min="0" placeholder="0" style="margin:0;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Rent (₹)</label>
+          <input type="number" class="form-input" id="misEntryRent" min="0" placeholder="0" style="margin:0;" oninput="misRecalc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Cash (₹)</label>
+          <input type="number" class="form-input" id="misEntryCash" min="0" placeholder="0" style="margin:0;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Pending (₹)</label>
+          <input type="number" class="form-input" id="misEntryPending" min="0" placeholder="0" style="margin:0;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Bank (₹)</label>
+          <input type="number" class="form-input" id="misEntryBank" min="0" placeholder="0" style="margin:0;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Expense (₹) <span style="font-size:10px;font-weight:400;color:var(--text-dim);">enter 0 if none</span></label>
+          <input type="number" class="form-input" id="misEntryExpense" min="0" placeholder="0" style="margin:0;" oninput="misRecalc()">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Remarks</label>
+          <input type="text" class="form-input" id="misEntryRemarks" placeholder="Any note for this date…" style="margin:0;">
+        </div>
+      </div>
+      <!-- Quick preview -->
+      <div id="misEntryPreview" style="margin-top:14px;background:var(--graphite);border-radius:var(--radius);padding:12px 16px;font-size:13px;display:flex;gap:24px;flex-wrap:wrap;">
+        <span>Rent: <strong id="misPreviewRent" style="color:var(--paper);">₹0</strong></span>
+        <span>Expense: <strong id="misPreviewExpense" style="color:var(--warning);">₹0</strong></span>
+        <span>Profit: <strong id="misPreviewProfit" style="color:var(--success);">₹0</strong></span>
+      </div>
+    </div>
+    <div class="modal-footer" style="padding:0 24px 20px;display:flex;gap:10px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="misCloseModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="misSaveEntry()">💾 Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- HOTEL MIS STYLES -->
+<style>
+  #misTable tbody tr:nth-child(even) { background: rgba(255,255,255,0.02); }
+  #misTable tbody tr:hover { background: var(--hover); }
+  #misTable tbody tr.mis-row-red { background: rgba(197,75,44,0.18) !important; }
+  #misTable tbody tr.mis-row-red:hover { background: rgba(197,75,44,0.28) !important; }
+  #misTable td { padding:9px 10px; border-bottom:1px solid var(--border); color:var(--paper); }
+  .mis-edit-btn { background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:13px;cursor:pointer;padding:3px 9px;transition:var(--transition); }
+  .mis-edit-btn:hover { border-color:var(--rust);color:var(--rust); }
+  #misEntryModal.open { display:flex !important; }
+</style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script type="module">
@@ -5744,6 +5694,319 @@ window.invRecalcBalance   = window.invRecalcBalance;
 // ============================================================================
 
 if (window._autoInit) init();
+</script>
+
+<!-- ============================================================================
+     HOTEL MIS — Firebase Logic (separate Firebase project: hotel-mis-bc8c2)
+     ============================================================================ -->
+<script type="module">
+import { initializeApp }        from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc, query, where, orderBy }
+  from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// ── Hotel MIS Firebase project ────────────────────────────────────────────────
+const hotelApp = initializeApp({
+  apiKey:            "AIzaSyCKi0Bkh5ZQaa7TPQp77kUuIHyxi_9x5XI",
+  authDomain:        "hotel-mis-bc8c2.firebaseapp.com",
+  projectId:         "hotel-mis-bc8c2",
+  storageBucket:     "hotel-mis-bc8c2.firebasestorage.app",
+  messagingSenderId: "460754173615",
+  appId:             "1:460754173615:web:c8d0e0d6b315a3fe519e5a"
+}, "hotelMIS");
+
+const hotelDB = getFirestore(hotelApp);
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+const MONTH_NAMES = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+
+function fmt(n) {
+  const v = Number(n) || 0;
+  return "₹\u202f" + v.toLocaleString("en-IN");
+}
+
+function misDocId(dateStr) {
+  // dateStr = "YYYY-MM-DD"  → document ID = "YYYY-MM-DD"
+  return dateStr;
+}
+
+function misColPath(year, month) {
+  // e.g. "mis/2026-06/days"
+  const m = String(month + 1).padStart(2, "0");
+  return `mis/${year}-${m}/days`;
+}
+
+// ── Load table for selected year/month ────────────────────────────────────────
+window.misLoad = async function() {
+  const year  = parseInt(document.getElementById("misYear").value);
+  const month = parseInt(document.getElementById("misMonth").value);
+  const tbody = document.getElementById("misTableBody");
+  const tfoot = document.getElementById("misTableFoot");
+
+  tbody.innerHTML = `<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--text-dim);">Loading…</td></tr>`;
+  tfoot.style.display = "none";
+
+  // Days in month
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Fetch all docs for this month
+  const colPath = misColPath(year, month);
+  const snap = await getDocs(collection(hotelDB, colPath));
+  const dataMap = {};
+  snap.forEach(d => { dataMap[d.id] = d.data(); });
+
+  let totBookings = 0, totRent = 0, totCash = 0, totPending = 0, totBank = 0, totExpense = 0;
+  let rows = "";
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const mm   = String(month + 1).padStart(2, "0");
+    const dd   = String(d).padStart(2, "0");
+    const key  = `${year}-${mm}-${dd}`;
+    const entry = dataMap[key] || {};
+
+    const bookings = Number(entry.bookings) || 0;
+    const rent     = Number(entry.rent)     || 0;
+    const cash     = Number(entry.cash)     || 0;
+    const pending  = Number(entry.pending)  || 0;
+    const bank     = Number(entry.bank)     || 0;
+    const expense  = Number(entry.expense)  || 0;
+    const remarks  = entry.remarks || "";
+
+    totBookings += bookings;
+    totRent     += rent;
+    totCash     += cash;
+    totPending  += pending;
+    totBank     += bank;
+    totExpense  += expense;
+
+    const hasData    = entry.rent !== undefined;
+    const isRedRow   = remarks.length > 0 && pending > 0;
+    const rowClass   = isRedRow ? "mis-row-red" : "";
+    const dateLabel  = `${dd}/${mm}/${year}`;
+    const displayFmt = v => v > 0 ? fmt(v) : '<span style="color:var(--text-dim)">—</span>';
+
+    rows += `
+      <tr class="${rowClass}" data-key="${key}">
+        <td style="text-align:center;white-space:nowrap;font-weight:600;">${dateLabel}</td>
+        <td style="text-align:center;">${hasData ? bookings : '<span style="color:var(--text-dim)">—</span>'}</td>
+        <td style="text-align:right;">${hasData ? displayFmt(rent) : '<span style="color:var(--text-dim)">—</span>'}</td>
+        <td style="text-align:right;">${hasData ? displayFmt(cash) : '<span style="color:var(--text-dim)">—</span>'}</td>
+        <td style="text-align:right;">${pending > 0 ? '<span style="color:#e63946;font-weight:700;">'+fmt(pending)+'</span>' : (hasData ? '<span style="color:var(--text-dim)">0</span>' : '<span style="color:var(--text-dim)">—</span>')}</td>
+        <td style="text-align:right;">${hasData ? displayFmt(bank) : '<span style="color:var(--text-dim)">—</span>'}</td>
+        <td style="text-align:right;color:${expense > 0 ? 'var(--warning)' : 'var(--text-dim)'};">${hasData ? (expense > 0 ? fmt(expense) : '0') : '—'}</td>
+        <td style="font-size:12px;color:${remarks ? 'var(--warning)' : 'var(--text-dim)'};">${remarks || '—'}</td>
+        <td style="text-align:center;"><button class="mis-edit-btn" onclick="misOpenAddEntry('${key}')">✏️</button></td>
+      </tr>`;
+  }
+
+  tbody.innerHTML = rows;
+  tfoot.style.display = "";
+
+  // Footer totals
+  document.getElementById("misFootBookings").textContent = totBookings;
+  document.getElementById("misFootRent").textContent     = fmt(totRent);
+  document.getElementById("misFootCash").textContent     = fmt(totCash);
+  document.getElementById("misFootPending").innerHTML    = totPending > 0
+    ? `<span style="color:#e63946;font-weight:800;">${fmt(totPending)}</span>` : fmt(0);
+  document.getElementById("misFootBank").textContent     = fmt(totBank);
+  document.getElementById("misFootExpense").textContent  = fmt(totExpense);
+
+  // Summary cards
+  document.getElementById("misTotalBookings").textContent = totBookings;
+  document.getElementById("misTotalRent").textContent     = fmt(totRent);
+  document.getElementById("misTotalExpense").textContent  = fmt(totExpense);
+  const profit = totRent - totExpense;
+  const profitEl = document.getElementById("misTotalProfit");
+  profitEl.textContent = fmt(profit);
+  profitEl.style.color = profit >= 0 ? "var(--success)" : "var(--error)";
+};
+
+// ── Open modal for add / edit ─────────────────────────────────────────────────
+window.misOpenAddEntry = async function(dateKey) {
+  const modal = document.getElementById("misEntryModal");
+  const title = document.getElementById("misModalTitle");
+
+  // Default date = today
+  const today = new Date();
+  const defDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
+  document.getElementById("misEntryDate").value     = dateKey || defDate;
+  document.getElementById("misEntryBookings").value = "";
+  document.getElementById("misEntryRent").value     = "";
+  document.getElementById("misEntryCash").value     = "";
+  document.getElementById("misEntryPending").value  = "";
+  document.getElementById("misEntryBank").value     = "";
+  document.getElementById("misEntryExpense").value  = "";
+  document.getElementById("misEntryRemarks").value  = "";
+
+  if (dateKey) {
+    title.textContent = "Edit Entry — " + dateKey;
+    // Load existing
+    const [y, m, d] = dateKey.split("-");
+    const colPath = misColPath(parseInt(y), parseInt(m) - 1);
+    try {
+      const snap = await getDoc(doc(hotelDB, colPath, dateKey));
+      if (snap.exists()) {
+        const e = snap.data();
+        document.getElementById("misEntryBookings").value = e.bookings ?? "";
+        document.getElementById("misEntryRent").value     = e.rent     ?? "";
+        document.getElementById("misEntryCash").value     = e.cash     ?? "";
+        document.getElementById("misEntryPending").value  = e.pending  ?? "";
+        document.getElementById("misEntryBank").value     = e.bank     ?? "";
+        document.getElementById("misEntryExpense").value  = e.expense  ?? "";
+        document.getElementById("misEntryRemarks").value  = e.remarks  ?? "";
+      }
+    } catch(err) { console.warn("Load entry:", err); }
+  } else {
+    title.textContent = "Add Entry";
+  }
+
+  misRecalc();
+  modal.classList.add("open");
+};
+
+window.misCloseModal = function() {
+  document.getElementById("misEntryModal").classList.remove("open");
+};
+
+window.misRecalc = function() {
+  const rent    = Number(document.getElementById("misEntryRent").value)    || 0;
+  const expense = Number(document.getElementById("misEntryExpense").value) || 0;
+  document.getElementById("misPreviewRent").textContent    = fmt(rent);
+  document.getElementById("misPreviewExpense").textContent = fmt(expense);
+  const profit = rent - expense;
+  const el = document.getElementById("misPreviewProfit");
+  el.textContent = fmt(profit);
+  el.style.color = profit >= 0 ? "var(--success)" : "var(--error)";
+};
+
+// ── Save entry to Firestore ───────────────────────────────────────────────────
+window.misSaveEntry = async function() {
+  const dateVal = document.getElementById("misEntryDate").value;
+  if (!dateVal) { alert("Please select a date."); return; }
+
+  const [y, m, d] = dateVal.split("-");
+  const colPath = misColPath(parseInt(y), parseInt(m) - 1);
+
+  const entry = {
+    date:     dateVal,
+    bookings: Number(document.getElementById("misEntryBookings").value) || 0,
+    rent:     Number(document.getElementById("misEntryRent").value)     || 0,
+    cash:     Number(document.getElementById("misEntryCash").value)     || 0,
+    pending:  Number(document.getElementById("misEntryPending").value)  || 0,
+    bank:     Number(document.getElementById("misEntryBank").value)     || 0,
+    expense:  Number(document.getElementById("misEntryExpense").value)  || 0,
+    remarks:  document.getElementById("misEntryRemarks").value.trim(),
+    updatedAt: new Date().toISOString()
+  };
+
+  try {
+    await setDoc(doc(hotelDB, colPath, dateVal), entry);
+    misCloseModal();
+    // Reload the table if viewing this month
+    const curYear  = parseInt(document.getElementById("misYear").value);
+    const curMonth = parseInt(document.getElementById("misMonth").value);
+    if (curYear === parseInt(y) && curMonth === parseInt(m) - 1) {
+      misLoad();
+    }
+  } catch(err) {
+    alert("❌ Error saving: " + err.message);
+  }
+};
+
+// ── WhatsApp MIS sender ───────────────────────────────────────────────────────
+window.misSendWhatsApp = async function() {
+  const year  = parseInt(document.getElementById("misYear").value);
+  const month = parseInt(document.getElementById("misMonth").value);
+  const waNum = document.getElementById("misWaNumber").value.trim().replace(/\s+/g, "");
+
+  if (!waNum) { alert("Please enter a WhatsApp number with country code (e.g. 919876543210)"); return; }
+
+  // MIS = 1st to yesterday
+  const today     = new Date();
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+
+  // Start = 1st of selected month, End = min(last day of month, yesterday)
+  const startDate = new Date(year, month, 1);
+  const endDate   = new Date(Math.min(new Date(year, month + 1, 0).getTime(), yesterday.getTime()));
+
+  if (startDate > yesterday) {
+    alert("No data to send — the selected month hasn't started yet (or is in the future).");
+    return;
+  }
+
+  // Fetch all data for the month
+  const colPath = misColPath(year, month);
+  const snap    = await getDocs(collection(hotelDB, colPath));
+  const dataMap = {};
+  snap.forEach(d => { dataMap[d.id] = d.data(); });
+
+  let totBookings = 0, totRent = 0, totCash = 0, totPending = 0, totBank = 0, totExpense = 0;
+  let lines = [];
+
+  for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
+    const mm  = String(dt.getMonth() + 1).padStart(2, "0");
+    const dd  = String(dt.getDate()).padStart(2, "0");
+    const key = `${year}-${mm}-${dd}`;
+    const e   = dataMap[key];
+    if (!e) continue;
+
+    const bk = Number(e.bookings)||0, rn = Number(e.rent)||0, ca = Number(e.cash)||0,
+          pe = Number(e.pending)||0,  bk2= Number(e.bank)||0, ex = Number(e.expense)||0;
+
+    totBookings += bk; totRent += rn; totCash += ca;
+    totPending  += pe; totBank += bk2; totExpense += ex;
+
+    let line = `📅 ${dd}/${mm} | 🛏 ${bk} | ₹${rn.toLocaleString("en-IN")}`;
+    if (pe > 0) line += ` | ⏳ ₹${pe.toLocaleString("en-IN")}`;
+    if (ex > 0) line += ` | 💸 ₹${ex.toLocaleString("en-IN")}`;
+    if (e.remarks) line += `\n   ↳ ${e.remarks}`;
+    lines.push(line);
+  }
+
+  const netProfit = totRent - totExpense;
+  const msgDateRange = `1 ${MONTH_NAMES[month].slice(0,3)} – ${endDate.getDate()} ${MONTH_NAMES[month].slice(0,3)} ${year}`;
+
+  const msg =
+`🏨 *Forever Hotel — MIS Report*
+📆 *${MONTH_NAMES[month]} ${year}* (${msgDateRange})
+${"─".repeat(32)}
+
+${lines.join("\n\n")}
+
+${"─".repeat(32)}
+📊 *MONTHLY SUMMARY*
+🛏 Total Bookings : *${totBookings}*
+💰 Total Rent       : *₹${totRent.toLocaleString("en-IN")}*
+💵 Total Cash       : ₹${totCash.toLocaleString("en-IN")}
+⏳ Total Pending  : ₹${totPending.toLocaleString("en-IN")}
+🏦 Total Bank       : ₹${totBank.toLocaleString("en-IN")}
+💸 Total Expense  : ₹${totExpense.toLocaleString("en-IN")}
+${"─".repeat(32)}
+📈 *Net Profit : ₹${netProfit.toLocaleString("en-IN")}*
+   _(Rent − Expense)_
+${"─".repeat(32)}
+_Internal Records — Forever Hotel 🏨_`;
+
+  const encoded = encodeURIComponent(msg);
+  window.open(`https://wa.me/${waNum}?text=${encoded}`, "_blank");
+};
+
+// ── Auto-load when tab opens ──────────────────────────────────────────────────
+const _origSwitchTabMIS = window.switchTab;
+window.switchTab = function(name) {
+  _origSwitchTabMIS(name);
+  if (name === "hotelMIS") misLoad();
+};
+
+// Set current month by default
+(function() {
+  const now = new Date();
+  document.getElementById("misMonth").value = now.getMonth();
+  document.getElementById("misYear").value  = now.getFullYear();
+})();
+
+console.log("✅ Hotel MIS module loaded");
 </script>
 
 </body>
