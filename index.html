@@ -2328,51 +2328,54 @@ tbody td {
     <div class="section-header">
       <div class="section-title-wrap">
         <h1 class="section-title">Google <span class="highlight">Drive</span></h1>
-        <p class="section-subtitle">Browse your shared Drive files — signed in as your Google account</p>
+        <p class="section-subtitle">View shared Drive files directly — no sign-in required</p>
       </div>
       <div class="section-actions">
-        <button class="btn btn-secondary" onclick="driveRefresh()">↺ Refresh</button>
-        <button class="btn btn-secondary" id="driveViewToggle" onclick="driveToggleView()">☰ List View</button>
+        <a href="https://drive.google.com/drive/folders/1YjbhtYhp_SKeVhnDg1VkuPOufJXKBGyO?usp=drive_link" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Open Folder</a>
+        <a href="https://docs.google.com/spreadsheets/d/1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I/edit?usp=drive_link" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Open Sheet</a>
       </div>
     </div>
 
-    <!-- Search bar -->
-    <div class="card" style="margin-bottom:16px;padding:14px 20px;">
-      <div style="display:flex;gap:10px;align-items:center;">
-        <input type="text" id="driveSearchInput" class="form-input" style="flex:1;margin:0;" placeholder="🔍  Search your Drive…" onkeydown="if(event.key==='Enter') driveSearch()">
-        <button class="btn btn-primary" onclick="driveSearch()">Search</button>
-        <button class="btn btn-secondary" id="driveClearSearchBtn" onclick="driveClearSearch()" style="display:none;">✕ Clear</button>
-      </div>
+    <!-- Tab switcher -->
+    <div style="display:flex;gap:8px;margin-bottom:16px;">
+      <button id="driveTab1" onclick="driveShowTab(1)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--rust);background:var(--rust);color:#fff;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗂️ Shared Folder</button>
+      <button id="driveTab2" onclick="driveShowTab(2)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 Spreadsheet</button>
     </div>
 
-    <!-- Breadcrumb -->
-    <div id="driveBreadcrumb" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;"></div>
-
-    <!-- Status message -->
-    <div id="driveMsg" style="display:none;"></div>
-
-    <!-- Connect button (shown before auth) -->
-    <div id="driveConnectWrap" style="display:none;text-align:center;padding:56px 20px;">
-      <div style="font-size:52px;margin-bottom:16px;">🔗</div>
-      <div style="font-weight:700;font-size:17px;color:var(--paper);margin-bottom:8px;">Connect Google Drive</div>
-      <div style="font-size:13px;color:var(--text-dim);margin-bottom:28px;max-width:320px;margin-left:auto;margin-right:auto;">
-        Tap once to grant Drive access. After this you'll never need to do it again on this browser.
-      </div>
-      <button onclick="driveConnect()" style="display:inline-flex;align-items:center;gap:10px;padding:13px 30px;background:#fff;color:#333;border:none;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;box-shadow:0 2px 12px rgba(0,0,0,0.25);">
-        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-        Connect with Google
-      </button>
+    <!-- Drive Folder Embed -->
+    <div id="drivePane1" class="card" style="padding:0;overflow:hidden;border-radius:var(--radius);border:1px solid var(--border);">
+      <iframe
+        src="https://drive.google.com/embeddedfolderview?id=1YjbhtYhp_SKeVhnDg1VkuPOufJXKBGyO#list"
+        style="width:100%;height:600px;border:none;background:#fff;"
+        allowfullscreen
+        title="Shared Drive Folder">
+      </iframe>
     </div>
 
-    <!-- File list/grid -->
-    <div id="driveFilesWrap"></div>
-
-    <!-- Detail side panel -->
-    <div id="driveDetailPanel" style="display:none;position:fixed;right:0;top:64px;bottom:0;width:260px;background:var(--card);border-left:1px solid var(--border);padding:20px;z-index:300;overflow-y:auto;box-shadow:var(--shadow-lg);">
-      <button onclick="driveClosePanel()" style="position:absolute;top:12px;right:12px;background:none;border:none;color:var(--text-dim);font-size:20px;cursor:pointer;">×</button>
-      <div id="driveDetailContent"></div>
+    <!-- Spreadsheet Embed -->
+    <div id="drivePane2" class="card" style="padding:0;overflow:hidden;border-radius:var(--radius);border:1px solid var(--border);display:none;">
+      <iframe
+        src="https://docs.google.com/spreadsheets/d/1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I/preview"
+        style="width:100%;height:600px;border:none;background:#fff;"
+        allowfullscreen
+        title="Shared Spreadsheet">
+      </iframe>
     </div>
+
   </section>
+
+  <script>
+  function driveShowTab(n) {
+    document.getElementById('drivePane1').style.display = n === 1 ? 'block' : 'none';
+    document.getElementById('drivePane2').style.display = n === 2 ? 'block' : 'none';
+    document.getElementById('driveTab1').style.background = n === 1 ? 'var(--rust)' : 'transparent';
+    document.getElementById('driveTab1').style.color = n === 1 ? '#fff' : 'var(--text-dim)';
+    document.getElementById('driveTab1').style.borderColor = n === 1 ? 'var(--rust)' : 'var(--border)';
+    document.getElementById('driveTab2').style.background = n === 2 ? 'var(--rust)' : 'transparent';
+    document.getElementById('driveTab2').style.color = n === 2 ? '#fff' : 'var(--text-dim)';
+    document.getElementById('driveTab2').style.borderColor = n === 2 ? 'var(--rust)' : 'var(--border)';
+  }
+  </script>
 
 
 </div><!-- end .main -->
