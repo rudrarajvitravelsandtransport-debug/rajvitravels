@@ -2377,14 +2377,16 @@ tbody td {
       </div>
       <div class="section-actions">
         <a href="https://drive.google.com/drive/folders/1YjbhtYhp_SKeVhnDg1VkuPOufJXKBGyO?usp=drive_link" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Open Folder</a>
-        <a href="https://docs.google.com/spreadsheets/d/1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I/edit?usp=drive_link" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Open Sheet</a>
+        <a href="https://docs.google.com/spreadsheets/d/1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I/edit?usp=drive_link" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Surat Office</a>
+        <a href="https://docs.google.com/spreadsheets/d/1ELKDvjHn78roNEMfoXf3oCfSiT7RcpSJLu9YQ1eu9nw/edit?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Forever Hotel</a>
       </div>
     </div>
 
     <!-- Tab switcher -->
     <div style="display:flex;gap:8px;margin-bottom:16px;">
       <button id="driveTab1" onclick="driveShowTab(1)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--rust);background:var(--rust);color:#fff;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗂️ Shared Folder</button>
-      <button id="driveTab2" onclick="driveShowTab(2)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 Spreadsheet</button>
+      <button id="driveTab2" onclick="driveShowTab(2)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 Surat Office</button>
+      <button id="driveTab3" onclick="driveShowTab(3)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 Forever Hotel</button>
     </div>
 
     <!-- Drive Folder Embed -->
@@ -2404,6 +2406,16 @@ tbody td {
         style="width:100%;height:600px;border:none;background:#fff;"
         allowfullscreen
         title="Shared Spreadsheet">
+      </iframe>
+    </div>
+
+    <!-- Spreadsheet 2 Embed -->
+    <div id="drivePane3" class="card" style="padding:0;overflow:hidden;border-radius:var(--radius);border:1px solid var(--border);display:none;">
+      <iframe
+        src="https://docs.google.com/spreadsheets/d/1ELKDvjHn78roNEMfoXf3oCfSiT7RcpSJLu9YQ1eu9nw/preview"
+        style="width:100%;height:600px;border:none;background:#fff;"
+        allowfullscreen
+        title="Shared Spreadsheet 2">
       </iframe>
     </div>
   </section>
@@ -2557,12 +2569,16 @@ tbody td {
 function driveShowTab(n) {
   document.getElementById('drivePane1').style.display = n === 1 ? 'block' : 'none';
   document.getElementById('drivePane2').style.display = n === 2 ? 'block' : 'none';
+  document.getElementById('drivePane3').style.display = n === 3 ? 'block' : 'none';
   document.getElementById('driveTab1').style.background    = n === 1 ? 'var(--rust)' : 'transparent';
   document.getElementById('driveTab1').style.color         = n === 1 ? '#fff' : 'var(--text-dim)';
   document.getElementById('driveTab1').style.borderColor   = n === 1 ? 'var(--rust)' : 'var(--border)';
   document.getElementById('driveTab2').style.background    = n === 2 ? 'var(--rust)' : 'transparent';
   document.getElementById('driveTab2').style.color         = n === 2 ? '#fff' : 'var(--text-dim)';
   document.getElementById('driveTab2').style.borderColor   = n === 2 ? 'var(--rust)' : 'var(--border)';
+  document.getElementById('driveTab3').style.background    = n === 3 ? 'var(--rust)' : 'transparent';
+  document.getElementById('driveTab3').style.color         = n === 3 ? '#fff' : 'var(--text-dim)';
+  document.getElementById('driveTab3').style.borderColor   = n === 3 ? 'var(--rust)' : 'var(--border)';
 }
 </script>
 
@@ -3076,28 +3092,6 @@ window.AppState = {
 };
 
 // ── Fixed partner lists (pre-seeded, editable per-partner % only) ─────────────
-const MEHUL_NAME = 'Mehul bhai'; // Owner — receives % when others are removed
-
-const FIXED_PARTNER_LISTS = {
-  kk: [
-    { name: 'Mehul bhai',    percentage: 40 },
-    { name: 'Bhadresh bhai', percentage: 15 },
-    { name: 'Divyarajbhai', percentage: 15 },
-    { name: 'Akshay bhai',   percentage: 15 },
-    { name: 'Prem bhai',     percentage: 15 }
-  ],
-  office: [
-    { name: 'Mehul bhai',  percentage: 40 },
-    { name: 'Akshay bhai', percentage: 40 },
-    { name: 'Rudradutt',   percentage: 10 },
-    { name: 'Prem',        percentage: 10 }
-  ],
-  jamnagar: [
-    { name: 'Mehul bhai',    percentage: 50 },
-    { name: 'Daxaben',       percentage: 40 },
-    { name: 'Bhadresh bhai', percentage: 10 }
-  ]
-};
 
 // ============================================================================
 // CHANNEL CONFIGURATION
@@ -3335,24 +3329,136 @@ updateClock();
 // PARTNER MANAGEMENT — Channel-wise fixed lists + custom
 // ============================================================================
 
-// ── Render a fixed list (read-only display) ───────────────────────────────────
+// ============================================================================
+// PARTNER MANAGEMENT — Channel-wise fixed lists + custom
+// ============================================================================
+
+// ── Default fixed lists (used only to seed if nothing saved) ─────────────────
+const DEFAULT_FIXED_LISTS = {
+  kk: [
+    { name: 'Mehul bhai',    percentage: 40 },
+    { name: 'Bhadresh bhai', percentage: 15 },
+    { name: 'Divyarajbhai',  percentage: 15 },
+    { name: 'Akshay bhai',   percentage: 15 },
+    { name: 'Prem bhai',     percentage: 15 }
+  ],
+  office: [
+    { name: 'Mehul bhai',  percentage: 40 },
+    { name: 'Akshay bhai', percentage: 40 },
+    { name: 'Rudradutt',   percentage: 10 },
+    { name: 'Prem',        percentage: 10 }
+  ],
+  jamnagar: [
+    { name: 'Mehul bhai',    percentage: 50 },
+    { name: 'Daxaben',       percentage: 40 },
+    { name: 'Bhadresh bhai', percentage: 10 }
+  ]
+};
+
+// Deep-clone defaults into AppState on first load if not already there
+function seedFixedLists() {
+  if (!AppState.fixedLists) {
+    AppState.fixedLists = JSON.parse(JSON.stringify(DEFAULT_FIXED_LISTS));
+  }
+}
+
+// ── Render an editable fixed list ─────────────────────────────────────────────
 function renderFixedList(listKey, containerId) {
-  const list = FIXED_PARTNER_LISTS[listKey];
+  seedFixedLists();
+  const list      = AppState.fixedLists[listKey];
   const container = document.getElementById(containerId);
   if (!container) return;
-  container.innerHTML = list.map(p => `
-    <div class="partner-entry" style="opacity:1;pointer-events:none;">
-      <input type="text" value="${escapeHtml(p.name)}" readonly
-        style="background:var(--graphite);color:var(--paper);border-color:var(--border);cursor:default;">
-      <input type="number" value="${p.percentage}" readonly
-        style="background:var(--graphite);color:var(--rust);font-weight:700;border-color:var(--border);cursor:default;">
-      <div style="width:28px;"></div>
+
+  const total = list.reduce((s, p) => s + parseNumber(p.percentage), 0);
+  const totalColor = total === 100 ? 'var(--success)' : total > 100 ? 'var(--error)' : 'var(--warning)';
+
+  container.innerHTML = list.map((p, i) => `
+    <div class="partner-entry">
+      <input type="text" placeholder="Partner name" value="${escapeHtml(p.name)}"
+        onchange="updateFixedPartnerName('${listKey}', ${i}, this.value)">
+      <input type="number" placeholder="%" value="${p.percentage}" min="0" max="100" step="0.01"
+        onchange="updateFixedPartnerPct('${listKey}', ${i}, this.value)">
+      <button class="partner-remove" onclick="removeFixedPartner('${listKey}', ${i})" title="Remove — % goes to Mehul bhai">×</button>
     </div>
   `).join('') +
-  `<div style="margin-top:8px;font-size:11px;color:var(--text-dim);font-style:italic;">
-    These are fixed. Use Custom Partners below to add or adjust.
+  `<div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;flex-wrap:wrap;gap:8px;">
+    <div style="font-size:12px;color:${totalColor};font-weight:700;">Total: ${total.toFixed(1)}%</div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;" onclick="addFixedPartner('${listKey}')">+ Add Partner</button>
+      <button class="btn btn-primary" style="font-size:12px;padding:5px 14px;" onclick="saveFixedList('${listKey}')">💾 Save</button>
+      <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;color:var(--text-dim);" onclick="resetFixedList('${listKey}')">↺ Reset</button>
+    </div>
   </div>`;
 }
+
+// ── Fixed list CRUD ───────────────────────────────────────────────────────────
+window.updateFixedPartnerName = function(listKey, index, name) {
+  seedFixedLists();
+  AppState.fixedLists[listKey][index].name = name;
+};
+
+window.updateFixedPartnerPct = function(listKey, index, val) {
+  seedFixedLists();
+  AppState.fixedLists[listKey][index].percentage = parseNumber(val);
+  renderFixedList(listKey, listKey === 'kk' ? 'kkPartnerRows' : listKey === 'office' ? 'officePartnerRows' : 'jamnagarPartnerRows');
+};
+
+window.removeFixedPartner = function(listKey, index) {
+  seedFixedLists();
+  const list    = AppState.fixedLists[listKey];
+  const removed = list[index];
+  const freed   = parseNumber(removed.percentage);
+
+  if (!confirm(`Remove ${removed.name}? Their ${freed}% will be added to Mehul bhai.`)) return;
+
+  list.splice(index, 1);
+
+  // Add freed % to Mehul bhai in this list
+  const mehul = list.find(p => p.name.trim().toLowerCase().includes('mehul'));
+  if (mehul) {
+    mehul.percentage = parseNumber(mehul.percentage) + freed;
+  }
+
+  const containerId = listKey === 'kk' ? 'kkPartnerRows' : listKey === 'office' ? 'officePartnerRows' : 'jamnagarPartnerRows';
+  renderFixedList(listKey, containerId);
+};
+
+window.addFixedPartner = function(listKey) {
+  seedFixedLists();
+  AppState.fixedLists[listKey].push({ name: '', percentage: 0 });
+  const containerId = listKey === 'kk' ? 'kkPartnerRows' : listKey === 'office' ? 'officePartnerRows' : 'jamnagarPartnerRows';
+  renderFixedList(listKey, containerId);
+};
+
+window.saveFixedList = async function(listKey) {
+  seedFixedLists();
+  const list  = AppState.fixedLists[listKey];
+  const total = list.reduce((s, p) => s + parseNumber(p.percentage), 0);
+  if (Math.abs(total - 100) > 0.01) {
+    showToast(`Total must be 100% (currently ${total.toFixed(1)}%)`, 'warning');
+    return;
+  }
+  if (list.some(p => !p.name.trim())) {
+    showToast('All partners must have names', 'warning');
+    return;
+  }
+  try {
+    await saveData();
+    showToast('Partner list saved ✅', 'success');
+  } catch(e) {
+    showToast('Failed to save', 'error');
+  }
+};
+
+window.resetFixedList = function(listKey) {
+  if (!confirm('Reset to default list? All your changes will be lost.')) return;
+  seedFixedLists();
+  AppState.fixedLists[listKey] = JSON.parse(JSON.stringify(DEFAULT_FIXED_LISTS[listKey]));
+  const containerId = listKey === 'kk' ? 'kkPartnerRows' : listKey === 'office' ? 'officePartnerRows' : 'jamnagarPartnerRows';
+  renderFixedList(listKey, containerId);
+  saveData();
+  showToast('List reset to defaults', 'info');
+};
 
 // ── Switch Surat list tab (KK ↔ Office) ──────────────────────────────────────
 window.switchPartnerList = function(tab) {
@@ -3425,7 +3531,7 @@ function removePartner(index) {
   AppState.partners.splice(index, 1);
 
   // Add freed % to Mehul bhai in custom list if present, else record it
-  const mehul = AppState.partners.find(p => p.name.trim().toLowerCase() === MEHUL_NAME.toLowerCase());
+  const mehul = AppState.partners.find(p => p.name.trim().toLowerCase().includes('mehul'));
   if (mehul) {
     mehul.percentage = parseNumber(mehul.percentage) + freedPct;
   }
@@ -3478,7 +3584,8 @@ function getActivePartnerListForHisab() {
   const sel = document.getElementById('wa_partnerList');
   const key = sel ? sel.value : (AppState.currentChannel === 'jamnagar' ? 'jamnagar' : 'kk');
   if (key === 'custom') return AppState.partners.filter(p => p.percentage > 0);
-  return FIXED_PARTNER_LISTS[key] || FIXED_PARTNER_LISTS.kk;
+  seedFixedLists();
+  return AppState.fixedLists[key] || AppState.fixedLists.kk;
 }
 
 // ── Set default list selector based on current channel ────────────────────────
@@ -4837,6 +4944,7 @@ async function saveData() {
     // Only persist the data fields — strip runtime UI state
     const dataToSave = {
       partners:                AppState.partners,
+      fixedLists:              AppState.fixedLists || {},
       bills:                   AppState.bills,
       awaiting:                AppState.awaiting,
       completed:               AppState.completed,
@@ -4876,7 +4984,8 @@ async function loadData() {
     
     if (docSnap.exists()) {
       const data = docSnap.data();
-      AppState.partners = data.partners || [];
+      AppState.partners   = data.partners   || [];
+      AppState.fixedLists = data.fixedLists || null;
       AppState.bills = data.bills || [];
       AppState.awaiting = data.awaiting || [];
       AppState.completed = data.completed || [];
@@ -4889,7 +4998,8 @@ async function loadData() {
       const localData = localStorage.getItem('rajvi_portal_data');
       if (localData) {
         const parsed = JSON.parse(localData);
-        AppState.partners = parsed.partners || [];
+        AppState.partners   = parsed.partners   || [];
+        AppState.fixedLists = parsed.fixedLists || null;
         AppState.bills = parsed.bills || [];
         AppState.awaiting = parsed.awaiting || [];
         AppState.completed = parsed.completed || [];
