@@ -1551,19 +1551,50 @@ tbody td {
       </div>
     </div>
 
-    <div class="card">
+    <!-- Fixed Partner Lists -->
+    <div class="card" id="partnerFixedCard">
       <div class="card-header">
-        <div class="card-title">
-          <span class="card-icon">👥</span>
-          Partner List
+        <div class="card-title"><span class="card-icon">👥</span> Partner Lists</div>
+      </div>
+
+      <!-- Surat Lists (shown when channel = surat) -->
+      <div id="suratPartnerLists">
+        <!-- Tab switcher -->
+        <div style="display:flex;gap:8px;margin-bottom:18px;">
+          <button id="kkTab" onclick="switchPartnerList('kk')" style="padding:8px 20px;border-radius:8px;border:1.5px solid var(--rust);background:var(--rust);color:#fff;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+            📋 List 1 — KK
+          </button>
+          <button id="officeTab" onclick="switchPartnerList('office')" style="padding:8px 20px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">
+            🏢 List 2 — Surat Office
+          </button>
+        </div>
+
+        <!-- KK List -->
+        <div id="kkListPane">
+          <div id="kkPartnerRows"></div>
+        </div>
+        <!-- Surat Office List -->
+        <div id="officeListPane" style="display:none;">
+          <div id="officePartnerRows"></div>
         </div>
       </div>
 
-      <div class="partner-list" id="partnerList"></div>
+      <!-- Jamnagar List (shown when channel = jamnagar) -->
+      <div id="jamnagarPartnerList" style="display:none;">
+        <div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;">🌆 Jamnagar Office</div>
+        <div id="jamnagarPartnerRows"></div>
+      </div>
 
+      <div class="divider" style="margin:18px 0;"></div>
+
+      <!-- Custom Partners (below fixed lists) -->
+      <div class="card-header" style="padding:0 0 10px 0;">
+        <div class="card-title" style="font-size:13px;"><span class="card-icon">⚙️</span> Custom Partners <span style="font-size:11px;font-weight:400;color:var(--text-dim);">— added below fixed lists, removed % goes to Mehul bhai</span></div>
+      </div>
+      <div class="partner-list" id="partnerList"></div>
       <button class="add-partner-btn" onclick="addPartner()">
         <span style="font-size: 20px;">+</span>
-        Add Partner
+        Add Custom Partner
       </button>
 
       <div class="pct-indicator">
@@ -1575,7 +1606,7 @@ tbody td {
       </div>
 
       <div class="btn-group mt-2">
-        <button class="btn btn-primary" onclick="savePartners()">Save Partners</button>
+        <button class="btn btn-primary" onclick="savePartners()">Save Custom Partners</button>
       </div>
     </div>
 
@@ -1587,6 +1618,20 @@ tbody td {
           WhatsApp Message Generator
         </div>
       </div>
+
+      <!-- Partner List selector for hisab -->
+      <div class="form-group">
+        <label class="form-label">Partner List for Hisab</label>
+        <select class="form-select" id="wa_partnerList" onchange="generateWhatsAppMessage()">
+          <option value="kk">List 1 — KK (Surat)</option>
+          <option value="office">List 2 — Surat Office</option>
+          <option value="jamnagar">Jamnagar</option>
+          <option value="custom">Custom Partners</option>
+        </select>
+        <div class="form-help">Choose which partner list to use for profit distribution</div>
+      </div>
+
+      <div class="divider"></div>
 
       <div class="form-group">
         <label class="form-label">Select Completed Record</label>
@@ -1613,7 +1658,6 @@ tbody td {
         <div class="form-group">
           <label class="form-label">Total Billing (₹)</label>
           <input type="number" class="form-input" id="wa_billing" placeholder="0.00" step="0.01" oninput="const v=parseFloat(this.value)||0; const d=document.getElementById('wa_tds_display'); if(d) d.value=v>0?'₹'+formatCurrency(v*0.01)+' (1% of ₹'+formatCurrency(v)+')':'';">
-
         </div>
         <div class="form-group">
           <label class="form-label">TDS (1% of Billing) <span style="color:var(--text-mid);font-weight:400;">[Record Only]</span></label>
@@ -1663,9 +1707,7 @@ tbody td {
           WhatsApp Message Preview
         </div>
       </div>
-
       <div style="background: var(--input-bg); border: 1px solid var(--border-light); border-radius: var(--radius); padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre-wrap; color: var(--paper);" id="whatsappMessagePreview"></div>
-
       <div class="btn-group mt-3">
         <button class="btn btn-success" onclick="copyWhatsAppMessage()">📋 Copy Message</button>
         <button class="btn btn-secondary" onclick="openWhatsApp()">💬 Open WhatsApp</button>
@@ -2385,10 +2427,13 @@ tbody td {
         <div style="display:flex;flex-direction:column;gap:5px;">
           <label style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;">Year</label>
           <select id="misYear" class="form-input" style="margin:0;min-width:100px;" onchange="misLoad()">
+            <option value="2024">2024</option>
             <option value="2025">2025</option>
             <option value="2026" selected>2026</option>
             <option value="2027">2027</option>
             <option value="2028">2028</option>
+            <option value="2029">2029</option>
+            <option value="2030">2030</option>
           </select>
         </div>
         <div style="display:flex;flex-direction:column;gap:5px;">
@@ -2474,12 +2519,11 @@ tbody td {
     <!-- WhatsApp MIS Send -->
     <div class="card" style="margin-top:16px;padding:18px 20px;">
       <div style="font-size:13px;font-weight:700;color:var(--paper);margin-bottom:4px;">📤 Send Monthly MIS on WhatsApp</div>
-      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Sends data from 1st to yesterday of selected month (MIS is always 1 day behind)</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Current month sends 1st to yesterday. Past months send the full month.</div>
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-        <input type="tel" id="misWaNumber" class="form-input" style="margin:0;max-width:220px;" placeholder="WhatsApp number (with country code)">
         <button class="btn btn-primary" style="background:linear-gradient(135deg,#25D366,#128C7E);" onclick="misSendWhatsApp()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="margin-right:6px;vertical-align:middle;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
-          Send MIS
+          Send MIS on WhatsApp
         </button>
       </div>
     </div>
@@ -2784,6 +2828,59 @@ function driveShowTab(n) {
   </div>
 </div>
 
+<!-- EDIT AWAITING BILL MODAL -->
+<div class="modal-overlay" id="editAwaitingModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title">✏️ Edit Awaiting Bill</h2>
+      <button class="modal-close" onclick="closeModal('editAwaitingModal')">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Company</label>
+        <input type="text" class="form-input" id="ea_company" placeholder="Company name">
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Month</label>
+          <select class="form-select" id="ea_month">
+            <option>January</option><option>February</option><option>March</option>
+            <option>April</option><option>May</option><option>June</option>
+            <option>July</option><option>August</option><option>September</option>
+            <option>October</option><option>November</option><option>December</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Year</label>
+          <input type="number" class="form-input" id="ea_year" min="2020" max="2030">
+        </div>
+      </div>
+      <div class="form-grid form-grid-2">
+        <div class="form-group">
+          <label class="form-label">Billing Amount (₹)</label>
+          <input type="number" class="form-input" id="ea_amount" min="0" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Total Duties</label>
+          <input type="number" class="form-input" id="ea_duties" min="0">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Vendor Amount (₹)</label>
+        <input type="number" class="form-input" id="ea_vendor" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input type="text" class="form-input" id="ea_notes" placeholder="Any notes…">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeModal('editAwaitingModal')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEditAwaiting()">💾 Save Changes</button>
+    </div>
+  </div>
+</div>
+
 <!-- HOTEL MIS MODAL -->
 <div class="modal-overlay" id="misEntryModal" style="display:none;position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:16px;">
   <div class="modal" style="background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
@@ -2972,9 +3069,34 @@ window.AppState = {
   completed: [],
   currentBillId: null,
   currentChannel: 'surat',
-  extraSuratCompanies: [],      // companies moved to Surat (persisted) — used by completed/bills swap
-  jamnagarExceptions: [],       // companies moved to Jamnagar (persisted) — used by completed/bills swap
-  awaitingChannelOverrides: {}  // per-bill-ID overrides for awaiting tab { billId: 'surat'|'jamnagar' }
+  extraSuratCompanies: [],
+  jamnagarExceptions: [],
+  awaitingChannelOverrides: {},
+  activePartnerListTab: 'kk'  // 'kk' or 'office' — which Surat list tab is active
+};
+
+// ── Fixed partner lists (pre-seeded, editable per-partner % only) ─────────────
+const MEHUL_NAME = 'Mehul bhai'; // Owner — receives % when others are removed
+
+const FIXED_PARTNER_LISTS = {
+  kk: [
+    { name: 'Mehul bhai',    percentage: 40 },
+    { name: 'Bhadresh bhai', percentage: 15 },
+    { name: 'Divyarajbhai', percentage: 15 },
+    { name: 'Akshay bhai',   percentage: 15 },
+    { name: 'Prem bhai',     percentage: 15 }
+  ],
+  office: [
+    { name: 'Mehul bhai',  percentage: 40 },
+    { name: 'Akshay bhai', percentage: 40 },
+    { name: 'Rudradutt',   percentage: 10 },
+    { name: 'Prem',        percentage: 10 }
+  ],
+  jamnagar: [
+    { name: 'Mehul bhai',    percentage: 50 },
+    { name: 'Daxaben',       percentage: 40 },
+    { name: 'Bhadresh bhai', percentage: 10 }
+  ]
 };
 
 // ============================================================================
@@ -3051,6 +3173,9 @@ function setChannel(channel) {
   populateMailCompanies();
   populateWhatsAppRecordSelect();
   updateBadges();
+  // Re-render partner fixed lists for new channel
+  renderPartnerChannelLists();
+  syncWaPartnerListDefault();
   showToast(`Switched to ${channel === 'surat' ? 'Surat' : 'Jamnagar'} channel`, 'info');
 }
 
@@ -3206,26 +3331,83 @@ updateClock();
 // ============================================================================
 // PARTNER MANAGEMENT
 // ============================================================================
+// ============================================================================
+// PARTNER MANAGEMENT — Channel-wise fixed lists + custom
+// ============================================================================
+
+// ── Render a fixed list (read-only display) ───────────────────────────────────
+function renderFixedList(listKey, containerId) {
+  const list = FIXED_PARTNER_LISTS[listKey];
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = list.map(p => `
+    <div class="partner-entry" style="opacity:1;pointer-events:none;">
+      <input type="text" value="${escapeHtml(p.name)}" readonly
+        style="background:var(--graphite);color:var(--paper);border-color:var(--border);cursor:default;">
+      <input type="number" value="${p.percentage}" readonly
+        style="background:var(--graphite);color:var(--rust);font-weight:700;border-color:var(--border);cursor:default;">
+      <div style="width:28px;"></div>
+    </div>
+  `).join('') +
+  `<div style="margin-top:8px;font-size:11px;color:var(--text-dim);font-style:italic;">
+    These are fixed. Use Custom Partners below to add or adjust.
+  </div>`;
+}
+
+// ── Switch Surat list tab (KK ↔ Office) ──────────────────────────────────────
+window.switchPartnerList = function(tab) {
+  AppState.activePartnerListTab = tab;
+  document.getElementById('kkListPane').style.display    = tab === 'kk'     ? '' : 'none';
+  document.getElementById('officeListPane').style.display = tab === 'office' ? '' : 'none';
+  const kkBtn  = document.getElementById('kkTab');
+  const offBtn = document.getElementById('officeTab');
+  if (tab === 'kk') {
+    kkBtn.style.background  = 'var(--rust)'; kkBtn.style.color  = '#fff'; kkBtn.style.borderColor  = 'var(--rust)';
+    offBtn.style.background = 'transparent'; offBtn.style.color = 'var(--text-dim)'; offBtn.style.borderColor = 'var(--border)';
+  } else {
+    offBtn.style.background = 'var(--rust)'; offBtn.style.color  = '#fff'; offBtn.style.borderColor = 'var(--rust)';
+    kkBtn.style.background  = 'transparent'; kkBtn.style.color  = 'var(--text-dim)'; kkBtn.style.borderColor  = 'var(--border)';
+  }
+};
+
+// ── Show correct lists based on current channel ───────────────────────────────
+function renderPartnerChannelLists() {
+  const isSurat = AppState.currentChannel === 'surat';
+  document.getElementById('suratPartnerLists').style.display    = isSurat ? '' : 'none';
+  document.getElementById('jamnagarPartnerList').style.display  = isSurat ? 'none' : '';
+
+  if (isSurat) {
+    renderFixedList('kk',     'kkPartnerRows');
+    renderFixedList('office', 'officePartnerRows');
+    switchPartnerList(AppState.activePartnerListTab || 'kk');
+  } else {
+    renderFixedList('jamnagar', 'jamnagarPartnerRows');
+  }
+}
+
+// ── Custom partners (add/remove, % redistributed to Mehul bhai) ───────────────
 function renderPartners() {
+  renderPartnerChannelLists();
+
   const list = document.getElementById('partnerList');
   const partners = AppState.partners;
-  
+
   if (partners.length === 0) {
-    list.innerHTML = '<div class="empty-state" style="padding: 40px 20px;"><div class="empty-title">No partners added yet</div><div class="empty-text">Add partners to start tracking profit sharing</div></div>';
+    list.innerHTML = '<div style="padding:16px 0;font-size:13px;color:var(--text-dim);">No custom partners — add below if needed</div>';
     updatePctIndicator();
     return;
   }
-  
+
   list.innerHTML = partners.map((p, i) => `
     <div class="partner-entry">
-      <input type="text" placeholder="Partner name" value="${escapeHtml(p.name)}" 
+      <input type="text" placeholder="Partner name" value="${escapeHtml(p.name)}"
         onchange="updatePartnerName(${i}, this.value)">
       <input type="number" placeholder="%" value="${p.percentage}" min="0" max="100" step="0.01"
         onchange="updatePartnerPercentage(${i}, this.value)">
       <button class="partner-remove" onclick="removePartner(${i})">×</button>
     </div>
   `).join('');
-  
+
   updatePctIndicator();
 }
 
@@ -3235,11 +3417,22 @@ function addPartner() {
 }
 
 function removePartner(index) {
-  if (confirm('Remove this partner?')) {
-    AppState.partners.splice(index, 1);
-    renderPartners();
-    saveData();
+  if (!confirm('Remove this partner? Their % will be added to Mehul bhai.')) return;
+
+  const removed = AppState.partners[index];
+  const freedPct = parseNumber(removed.percentage);
+
+  AppState.partners.splice(index, 1);
+
+  // Add freed % to Mehul bhai in custom list if present, else record it
+  const mehul = AppState.partners.find(p => p.name.trim().toLowerCase() === MEHUL_NAME.toLowerCase());
+  if (mehul) {
+    mehul.percentage = parseNumber(mehul.percentage) + freedPct;
   }
+  // (If Mehul isn't in custom list, he's in the fixed list — no action needed as fixed lists are read-only)
+
+  renderPartners();
+  saveData();
 }
 
 function updatePartnerName(index, name) {
@@ -3255,53 +3448,54 @@ function updatePartnerPercentage(index, percentage) {
 
 function updatePctIndicator() {
   const total = AppState.partners.reduce((sum, p) => sum + parseNumber(p.percentage), 0);
-  const pctBar = document.getElementById('pctBar');
+  const pctBar   = document.getElementById('pctBar');
   const pctValue = document.getElementById('pctValue');
-  
-  pctBar.style.width = `${Math.min(total, 100)}%`;
-  pctValue.textContent = `${total.toFixed(1)}%`;
-  
+  pctBar.style.width    = `${Math.min(total, 100)}%`;
+  pctValue.textContent  = `${total.toFixed(1)}%`;
   if (total > 100) {
-    pctValue.style.color = 'var(--error)';
-    pctBar.style.background = 'var(--error)';
+    pctValue.style.color = 'var(--error)'; pctBar.style.background = 'var(--error)';
   } else if (total === 100) {
-    pctValue.style.color = 'var(--success)';
-    pctBar.style.background = 'var(--success)';
+    pctValue.style.color = 'var(--success)'; pctBar.style.background = 'var(--success)';
   } else {
-    pctValue.style.color = 'var(--rust)';
-    pctBar.style.background = 'var(--rust)';
+    pctValue.style.color = 'var(--rust)'; pctBar.style.background = 'var(--rust)';
   }
 }
 
 async function savePartners() {
-  const total = AppState.partners.reduce((sum, p) => sum + parseNumber(p.percentage), 0);
-  
-  if (total !== 100) {
-    showToast('Total percentage must equal 100%', 'warning');
-    return;
-  }
-  
   const emptyPartners = AppState.partners.filter(p => !p.name.trim());
-  if (emptyPartners.length > 0) {
-    showToast('All partners must have names', 'warning');
-    return;
-  }
-  
+  if (emptyPartners.length > 0) { showToast('All custom partners must have names', 'warning'); return; }
   try {
     await saveData();
-    showToast('Partners saved successfully', 'success');
+    showToast('Custom partners saved successfully', 'success');
   } catch (error) {
     console.error('Error saving partners:', error);
     showToast('Failed to save partners', 'error');
   }
 }
 
-window.renderPartners = renderPartners;
-window.addPartner = addPartner;
-window.removePartner = removePartner;
-window.updatePartnerName = updatePartnerName;
-window.updatePartnerPercentage = updatePartnerPercentage;
-window.savePartners = savePartners;
+// ── Get the partner list to use for WhatsApp hisab ───────────────────────────
+function getActivePartnerListForHisab() {
+  const sel = document.getElementById('wa_partnerList');
+  const key = sel ? sel.value : (AppState.currentChannel === 'jamnagar' ? 'jamnagar' : 'kk');
+  if (key === 'custom') return AppState.partners.filter(p => p.percentage > 0);
+  return FIXED_PARTNER_LISTS[key] || FIXED_PARTNER_LISTS.kk;
+}
+
+// ── Set default list selector based on current channel ────────────────────────
+function syncWaPartnerListDefault() {
+  const sel = document.getElementById('wa_partnerList');
+  if (!sel) return;
+  if (AppState.currentChannel === 'jamnagar') sel.value = 'jamnagar';
+  else sel.value = AppState.activePartnerListTab || 'kk';
+}
+
+window.renderPartners           = renderPartners;
+window.addPartner               = addPartner;
+window.removePartner            = removePartner;
+window.updatePartnerName        = updatePartnerName;
+window.updatePartnerPercentage  = updatePartnerPercentage;
+window.savePartners             = savePartners;
+window.getActivePartnerListForHisab = getActivePartnerListForHisab;
 
 // ============================================================================
 // BILL MANAGEMENT
@@ -3578,6 +3772,9 @@ function renderAwaiting() {
       <td class="text-dim" style="font-size: 12px;">${bill.awaitingFrom}</td>
       <td>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-ghost" style="border-color:var(--info);color:var(--info);" onclick="openEditAwaiting('${bill.id}')">
+            ✏️ Edit
+          </button>
           <button class="btn btn-sm btn-ghost" onclick="openEditVendor('${bill.id}')" title="Edit vendor amount">
             ✏️ Vendor
           </button>
@@ -3896,8 +4093,72 @@ window.openEditVendor = openEditVendor;
 window.saveVendorAmount = saveVendorAmount;
 
 // ============================================================================
-// COMPLETED RECORDS
+// EDIT FULL AWAITING BILL
 // ============================================================================
+function openEditAwaiting(billId) {
+  const bill = AppState.awaiting.find(b => b.id === billId);
+  if (!bill) return;
+  AppState.currentEditAwaitingId = billId;
+
+  document.getElementById('ea_company').value    = bill.company    || '';
+  document.getElementById('ea_month').value      = bill.month      || 'January';
+  document.getElementById('ea_year').value       = bill.year       || new Date().getFullYear();
+  document.getElementById('ea_amount').value     = bill.amount     || 0;
+  document.getElementById('ea_duties').value     = bill.duties     || 0;
+  document.getElementById('ea_vendor').value     = bill.vendorAmount || 0;
+  document.getElementById('ea_notes').value      = bill.notes      || '';
+
+  openModal('editAwaitingModal');
+}
+
+async function saveEditAwaiting() {
+  const billId = AppState.currentEditAwaitingId;
+  if (!billId) return;
+
+  const company = document.getElementById('ea_company').value.trim();
+  if (!company) { showToast('Company name is required', 'warning'); return; }
+
+  const amount  = parseNumber(document.getElementById('ea_amount').value);
+  if (amount <= 0) { showToast('Please enter a valid billing amount', 'warning'); return; }
+
+  const duties  = parseInt(document.getElementById('ea_duties').value) || 0;
+  if (duties <= 0) { showToast('Please enter total duties', 'warning'); return; }
+
+  const idx = AppState.awaiting.findIndex(b => b.id === billId);
+  if (idx === -1) return;
+
+  AppState.awaiting[idx] = {
+    ...AppState.awaiting[idx],
+    company,
+    month:        document.getElementById('ea_month').value,
+    year:         document.getElementById('ea_year').value,
+    amount,
+    duties,
+    vendorAmount: parseNumber(document.getElementById('ea_vendor').value),
+    notes:        document.getElementById('ea_notes').value.trim(),
+    editedAt:     getCurrentDateTime()
+  };
+
+  // Sync back to bills array too if it exists there
+  const billIdx = AppState.bills.findIndex(b => b.id === billId);
+  if (billIdx !== -1) {
+    AppState.bills[billIdx] = { ...AppState.bills[billIdx], ...AppState.awaiting[idx] };
+  }
+
+  try {
+    await saveData();
+    showToast('Bill updated successfully', 'success');
+    closeModal('editAwaitingModal');
+    renderAwaiting();
+    renderBills();
+  } catch (err) {
+    console.error('Error saving awaiting bill:', err);
+    showToast('Failed to save changes', 'error');
+  }
+}
+
+window.openEditAwaiting = openEditAwaiting;
+window.saveEditAwaiting = saveEditAwaiting;
 function populateCompletedFilterYears() {
   const yearSel = document.getElementById('completedFilterYear');
   if (!yearSel) return;
@@ -4778,44 +5039,36 @@ function generateWhatsAppMessage() {
     return;
   }
   
-  // TDS = 1% of total billing — shown for record only
   const tds = billing * 0.01;
-  const gst = (received * 5) / 100; // Always 5% GST on received amount
-  
-  // Correct net profit: Received - GST(5%) - Vendor - Deduction - CF - Expenses
-  // TDS is NOT deducted — already deducted in received amount
+  const gst = (received * 5) / 100;
   const netProfit = received - gst - deduction - cf - expenses - vendor;
   
-  // Get partner distribution
-  const partners = AppState.partners.filter(p => p.percentage > 0);
+  // Get selected partner list for hisab
+  const partners = getActivePartnerListForHisab();
+  const selVal   = document.getElementById('wa_partnerList')?.value || 'kk';
+  const listLabel = selVal === 'kk' ? 'List 1 — KK' :
+                    selVal === 'office' ? 'List 2 — Surat Office' :
+                    selVal === 'jamnagar' ? 'Jamnagar' : 'Custom';
+
   let partnerLines = '';
-  
   if (partners.length > 0) {
     partners.forEach(p => {
       const share = (netProfit * p.percentage) / 100;
-      partnerLines += `• ${p.name.padEnd(12)} (${p.percentage}%) : Rs. ${formatCurrency(share)}\n`;
+      partnerLines += `• ${p.name.padEnd(14)} (${p.percentage}%) : Rs. ${formatCurrency(share)}\n`;
     });
   } else {
     partnerLines = '• No partners configured\n';
   }
   
-  // Get current date and time
   const now = new Date();
-  const dateStr = now.toLocaleDateString('en-IN', { 
-    day: '2-digit', 
-    month: 'short', 
-    year: 'numeric' 
-  });
-  const timeStr = now.toLocaleTimeString('en-IN', { 
-    hour: '2-digit', 
-    minute: '2-digit',
-    hour12: true 
-  });
+  const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
   
   const officeLabel = (AppState.currentChannel === 'jamnagar') ? 'JAMNAGAR' : 'SURAT';
-  // Generate WhatsApp formatted message
+
   const message = `*RAJVI TRAVELS AND TRANSPORT*
 *${officeLabel} OFFICE — PARTNER HISAB*
+*[ ${listLabel} ]*
 ━━━━━━━━━━━━━━━━━━━━━
 *Bill To :* ${company.toUpperCase()}
 *Period  :* ${period}
@@ -4841,13 +5094,9 @@ ${partnerLines}
 ━━━━━━━━━━━━━━━━━━━━━
 _Internal record — Rajvi T&T Surat_`;
 
-  // Display preview
   document.getElementById('whatsappMessagePreview').textContent = message;
   document.getElementById('whatsappPreviewCard').style.display = 'block';
-  
-  // Store message for copying/sharing
   window.currentWhatsAppMessage = message;
-  
   showToast('WhatsApp message generated', 'success');
 }
 
@@ -5918,22 +6167,26 @@ window.misSaveEntry = async function() {
 window.misSendWhatsApp = async function() {
   const year  = parseInt(document.getElementById("misYear").value);
   const month = parseInt(document.getElementById("misMonth").value);
-  const waNum = document.getElementById("misWaNumber").value.trim().replace(/\s+/g, "");
 
-  if (!waNum) { alert("Please enter a WhatsApp number with country code (e.g. 919876543210)"); return; }
-
-  // MIS = 1st to yesterday
   const today     = new Date();
   const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
 
-  // Start = 1st of selected month, End = min(last day of month, yesterday)
-  const startDate = new Date(year, month, 1);
-  const endDate   = new Date(Math.min(new Date(year, month + 1, 0).getTime(), yesterday.getTime()));
+  const startDate     = new Date(year, month, 1);
+  const lastDayOfMonth = new Date(year, month + 1, 0);
 
-  if (startDate > yesterday) {
-    alert("No data to send — the selected month hasn't started yet (or is in the future).");
+  // Smart end date:
+  // - Past month → full month (last day)
+  // - Current month → yesterday (MIS 1 day behind)
+  // - Future month → block
+  const isCurrentMonth = (year === today.getFullYear() && month === today.getMonth());
+  const isPastMonth    = new Date(year, month + 1, 0) < new Date(today.getFullYear(), today.getMonth(), 1);
+
+  if (!isPastMonth && !isCurrentMonth) {
+    alert("This month is in the future — no data to send yet.");
     return;
   }
+
+  const endDate = isPastMonth ? lastDayOfMonth : yesterday;
 
   // Fetch all data for the month
   const colPath = misColPath(year, month);
@@ -5942,7 +6195,6 @@ window.misSendWhatsApp = async function() {
   snap.forEach(d => { dataMap[d.id] = d.data(); });
 
   let totBookings = 0, totRent = 0, totCash = 0, totPending = 0, totBank = 0, totExpense = 0;
-  let lines = [];
 
   for (let dt = new Date(startDate); dt <= endDate; dt.setDate(dt.getDate() + 1)) {
     const mm  = String(dt.getMonth() + 1).padStart(2, "0");
@@ -5956,40 +6208,34 @@ window.misSendWhatsApp = async function() {
 
     totBookings += bk; totRent += rn; totCash += ca;
     totPending  += pe; totBank += bk2; totExpense += ex;
+  }
 
-    let line = `📅 ${dd}/${mm} | 🛏 ${bk} | ₹${rn.toLocaleString("en-IN")}`;
-    if (pe > 0) line += ` | ⏳ ₹${pe.toLocaleString("en-IN")}`;
-    if (ex > 0) line += ` | 💸 ₹${ex.toLocaleString("en-IN")}`;
-    if (e.remarks) line += `\n   ↳ ${e.remarks}`;
-    lines.push(line);
+  if (totRent === 0 && totBookings === 0) {
+    alert("No entries found for this period. Add some data first!");
+    return;
   }
 
   const netProfit = totRent - totExpense;
-  const msgDateRange = `1 ${MONTH_NAMES[month].slice(0,3)} – ${endDate.getDate()} ${MONTH_NAMES[month].slice(0,3)} ${year}`;
+  const endLabel  = `${String(endDate.getDate()).padStart(2,"0")} ${MONTH_NAMES[month].slice(0,3)}`;
+  const msgDateRange = `1 ${MONTH_NAMES[month].slice(0,3)} – ${endLabel} ${year}`;
 
   const msg =
-`🏨 *Forever Hotel — MIS Report*
+`🏨 *Forever Hotel — MIS*
 📆 *${MONTH_NAMES[month]} ${year}* (${msgDateRange})
-${"─".repeat(32)}
-
-${lines.join("\n\n")}
-
-${"─".repeat(32)}
-📊 *MONTHLY SUMMARY*
-🛏 Total Bookings : *${totBookings}*
-💰 Total Rent       : *₹${totRent.toLocaleString("en-IN")}*
-💵 Total Cash       : ₹${totCash.toLocaleString("en-IN")}
-⏳ Total Pending  : ₹${totPending.toLocaleString("en-IN")}
-🏦 Total Bank       : ₹${totBank.toLocaleString("en-IN")}
-💸 Total Expense  : ₹${totExpense.toLocaleString("en-IN")}
-${"─".repeat(32)}
+${"─".repeat(28)}
+🛏 Bookings  : *${totBookings}*
+💰 Rent         : *₹${totRent.toLocaleString("en-IN")}*
+💵 Cash         : ₹${totCash.toLocaleString("en-IN")}
+⏳ Pending    : ₹${totPending.toLocaleString("en-IN")}
+🏦 Bank         : ₹${totBank.toLocaleString("en-IN")}
+💸 Expense   : ₹${totExpense.toLocaleString("en-IN")}
+${"─".repeat(28)}
 📈 *Net Profit : ₹${netProfit.toLocaleString("en-IN")}*
-   _(Rent − Expense)_
-${"─".repeat(32)}
+${"─".repeat(28)}
 _Internal Records — Forever Hotel 🏨_`;
 
-  const encoded = encodeURIComponent(msg);
-  window.open(`https://wa.me/${waNum}?text=${encoded}`, "_blank");
+  // Open WhatsApp without a number — user picks the contact themselves
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
 };
 
 // ── Auto-load when tab opens ──────────────────────────────────────────────────
