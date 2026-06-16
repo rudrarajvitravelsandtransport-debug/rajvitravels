@@ -1654,15 +1654,30 @@ tbody td {
         </div>
       </div>
 
+      <!-- Hidden fields to carry actual TDS% and GST% from the completed record -->
+      <input type="hidden" id="wa_tds_pct" value="1">
+      <input type="hidden" id="wa_gst_pct" value="5">
+
       <div class="form-grid form-grid-2">
         <div class="form-group">
           <label class="form-label">Total Billing (₹)</label>
-          <input type="number" class="form-input" id="wa_billing" placeholder="0.00" step="0.01" oninput="const v=parseFloat(this.value)||0; const d=document.getElementById('wa_tds_display'); if(d) d.value=v>0?'₹'+formatCurrency(v*0.01)+' (1% of ₹'+formatCurrency(v)+')':'';">
+          <input type="number" class="form-input" id="wa_billing" placeholder="0.00" step="0.01" oninput="
+            const v = parseFloat(this.value) || 0;
+            const tdsPct = parseFloat(document.getElementById('wa_tds_pct').value) || 0;
+            const d = document.getElementById('wa_tds_display');
+            if (d) {
+              if (v > 0 && tdsPct > 0) {
+                d.value = '₹' + formatCurrency(v * tdsPct / 100) + ' (' + tdsPct + '% of ₹' + formatCurrency(v) + ')';
+              } else {
+                d.value = tdsPct === 0 ? 'N/A (0% TDS)' : '';
+              }
+            }
+          ">
         </div>
         <div class="form-group">
-          <label class="form-label">TDS (1% of Billing) <span style="color:var(--text-mid);font-weight:400;">[Record Only]</span></label>
+          <label class="form-label">TDS (Record Only)</label>
           <input type="text" class="form-input" id="wa_tds_display" readonly style="color:var(--text-dim);font-family:'JetBrains Mono',monospace;" placeholder="Auto-calculated">
-          <div class="form-help">Auto: 1% of total billing amount</div>
+          <div class="form-help">Based on TDS% from completed record</div>
         </div>
       </div>
 
@@ -5105,6 +5120,8 @@ function populateWhatsAppForm() {
     document.getElementById('wa_period').value = '';
     document.getElementById('wa_billing').value = '';
     document.getElementById('wa_tds_display').value = '';
+    document.getElementById('wa_tds_pct').value = '1';
+    document.getElementById('wa_gst_pct').value = '5';
     document.getElementById('wa_received').value = '';
     document.getElementById('wa_deduction').value = '';
     document.getElementById('wa_cf').value = '';
@@ -5121,9 +5138,23 @@ function populateWhatsAppForm() {
   document.getElementById('wa_company').value = record.company;
   document.getElementById('wa_period').value = `${record.month} ${record.year}`;
   document.getElementById('wa_billing').value = record.amount || 0;
+
+  // Store actual TDS% and GST% from the completed record (0 means not applicable)
+  const actualTdsPct = parseNumber(record.tdsPercent ?? 1);
+  const actualGstPct = parseNumber(record.gstPercent ?? 5);
+  document.getElementById('wa_tds_pct').value = actualTdsPct;
+  document.getElementById('wa_gst_pct').value = actualGstPct;
+
   const tdsBilling = parseNumber(record.amount || 0);
   const tdsDisplayWa = document.getElementById('wa_tds_display');
-  if (tdsDisplayWa) tdsDisplayWa.value = `₹${formatCurrency(tdsBilling * 0.01)} (1% of ₹${formatCurrency(tdsBilling)})`;
+  if (tdsDisplayWa) {
+    if (actualTdsPct > 0) {
+      tdsDisplayWa.value = `₹${formatCurrency(tdsBilling * actualTdsPct / 100)} (${actualTdsPct}% of ₹${formatCurrency(tdsBilling)})`;
+    } else {
+      tdsDisplayWa.value = 'N/A (0% TDS)';
+    }
+  }
+
   document.getElementById('wa_received').value = record.receivedAmount || 0;
   document.getElementById('wa_deduction').value = 0; // Not stored in our system
   document.getElementById('wa_cf').value = record.carryForwardAmount || 0;
@@ -5143,16 +5174,20 @@ function generateWhatsAppMessage() {
   const cf = parseNumber(document.getElementById('wa_cf').value);
   const expenses = parseNumber(document.getElementById('wa_expenses').value);
   const vendor = parseNumber(document.getElementById('wa_vendor').value);
-  
+
   if (!company || !period) {
     showToast('Please enter company name and period', 'warning');
     return;
   }
-  
-  const tds = billing * 0.01;
-  const gst = (received * 5) / 100;
+
+  // Read actual TDS% and GST% — 0 means not applicable for this company
+  const tdsPct = parseNumber(document.getElementById('wa_tds_pct')?.value ?? 1);
+  const gstPct = parseNumber(document.getElementById('wa_gst_pct')?.value ?? 5);
+
+  const tds = (billing * tdsPct) / 100;
+  const gst = (received * gstPct) / 100;
   const netProfit = received - gst - deduction - cf - expenses - vendor;
-  
+
   // Get selected partner list for hisab
   const partners = getActivePartnerListForHisab();
   const selVal   = document.getElementById('wa_partnerList')?.value || 'kk';
@@ -5169,12 +5204,16 @@ function generateWhatsAppMessage() {
   } else {
     partnerLines = '• No partners configured\n';
   }
-  
+
   const now = new Date();
   const dateStr = now.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   const timeStr = now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  
+
   const officeLabel = (AppState.currentChannel === 'jamnagar') ? 'JAMNAGAR' : 'SURAT';
+
+  // Conditionally include TDS and GST lines only when their % > 0
+  const tdsLine   = tdsPct > 0 ? `• TDS Value (${tdsPct}%)         : Rs. ${formatCurrency(tds)}\n` : '';
+  const gstLine   = gstPct > 0 ? `• GST (${gstPct}% of Received) : Rs. ${formatCurrency(gst)}\n` : '';
 
   const message = `*RAJVI TRAVELS AND TRANSPORT*
 *${officeLabel} OFFICE — PARTNER HISAB*
@@ -5187,11 +5226,9 @@ function generateWhatsAppMessage() {
 
 📊 *BILLING DETAILS*
 • Total Billing       : Rs. ${formatCurrency(billing)}
-• TDS Value (1%)         : Rs. ${formatCurrency(tds)}
-• Received Billing    : Rs. ${formatCurrency(received)}
+${tdsLine}• Received Billing    : Rs. ${formatCurrency(received)}
 • Deduction           : Rs. ${formatCurrency(deduction)}
-• GST (5% of Received) : Rs. ${formatCurrency(gst)}
-• Inv Not Count/CF    : Rs. ${formatCurrency(cf)}
+${gstLine}• Inv Not Count/CF    : Rs. ${formatCurrency(cf)}
 • Expenses            : Rs. ${formatCurrency(expenses)}
 • Vendor Payment      : Rs. ${formatCurrency(vendor)}
 
