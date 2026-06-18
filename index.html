@@ -5158,7 +5158,7 @@ let _bellAudioCtx = null;
 
 // Generates a short bell/chime tone using the Web Audio API (no external
 // audio file needed). Rings repeatedly across `durationSec` seconds.
-function playBellSound(durationSec = 3) {
+function playBellSound(durationSec = 8) {
   try {
     if (!_bellAudioCtx) {
       _bellAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -5173,20 +5173,20 @@ function playBellSound(durationSec = 3) {
 
     for (let i = 0; i < ringCount; i++) {
       const startAt = now + i * ringEvery;
-      // Two stacked harmonics give it a fuller "bell" timbre
-      [880, 1320].forEach((freq, idx) => {
+      // Three stacked harmonics, boosted, for a louder/fuller "bell" timbre
+      [880, 1320, 1760].forEach((freq, idx) => {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.value = freq;
-        const peak = idx === 0 ? 0.22 : 0.10;
+        const peak = idx === 0 ? 0.55 : (idx === 1 ? 0.30 : 0.16);
         gain.gain.setValueAtTime(0, startAt);
         gain.gain.linearRampToValueAtTime(peak, startAt + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.85);
+        gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.9);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(startAt);
-        osc.stop(startAt + 0.9);
+        osc.stop(startAt + 0.95);
       });
     }
   } catch (e) {
@@ -5220,12 +5220,12 @@ function ringBellNotification() {
 
   const totalAmount = (AppState.awaiting || []).reduce((sum, b) => sum + parseNumber(b.amount), 0);
 
-  playBellSound(3);
+  playBellSound(8);
 
   const bellIcon = document.getElementById('bellIcon');
   if (bellIcon) {
     bellIcon.classList.add('bell-ringing');
-    setTimeout(() => bellIcon.classList.remove('bell-ringing'), 3000);
+    setTimeout(() => bellIcon.classList.remove('bell-ringing'), 8000);
   }
 
   showToast(`🔔 ${count} payment${count > 1 ? 's' : ''} awaiting — ₹${formatCurrency(totalAmount)} expected`, 'warning');
