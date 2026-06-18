@@ -410,6 +410,64 @@ body {
   font-family: 'JetBrains Mono', monospace;
 }
 
+/* BELL NOTIFICATION */
+.bell-btn {
+  position: relative;
+  background: transparent;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.bell-btn:hover {
+  border-color: var(--warning);
+  background: rgba(244, 162, 97, 0.1);
+}
+
+.bell-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: var(--error);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  font-family: 'Manrope', sans-serif;
+  border: 2px solid #0a0a0a;
+  line-height: 1;
+}
+
+@keyframes bellSwing {
+  0%, 100% { transform: rotate(0deg); }
+  10% { transform: rotate(18deg); }
+  20% { transform: rotate(-14deg); }
+  30% { transform: rotate(10deg); }
+  40% { transform: rotate(-8deg); }
+  50% { transform: rotate(5deg); }
+  60% { transform: rotate(-3deg); }
+  70%, 100% { transform: rotate(0deg); }
+}
+
+.bell-ringing {
+  display: inline-block;
+  animation: bellSwing 1s ease-in-out infinite;
+  transform-origin: 50% 0%;
+}
+
 /* NAVIGATION */
 .nav-tabs {
   background: var(--slate);
@@ -1454,6 +1512,10 @@ tbody td {
   <!-- CHANNEL SELECTOR moved to its own row below -->
 
   <div class="topbar-right">
+    <button class="bell-btn" id="bellBtn" onclick="switchTab('awaiting')" title="View awaiting payments">
+      <span id="bellIcon" style="font-size:17px;">🔔</span>
+      <span class="bell-badge" id="bellBadge" style="display:none">0</span>
+    </button>
     <div class="sync-status" id="syncStatus">
       <div class="sync-dot"></div>
       <span>Synced</span>
@@ -5085,7 +5147,92 @@ function updateBadges() {
   } else {
     awaitingBadge.style.display = 'none';
   }
+
+  updateBellBadge();
 }
+
+// ============================================================================
+// BELL NOTIFICATION (Awaiting Payments) — topbar bell + opening chime
+// ============================================================================
+let _bellAudioCtx = null;
+
+// Generates a short bell/chime tone using the Web Audio API (no external
+// audio file needed). Rings repeatedly across `durationSec` seconds.
+function playBellSound(durationSec = 3) {
+  try {
+    if (!_bellAudioCtx) {
+      _bellAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (_bellAudioCtx.state === 'suspended') {
+      _bellAudioCtx.resume();
+    }
+    const ctx = _bellAudioCtx;
+    const now = ctx.currentTime;
+    const ringEvery = 1.0; // seconds between each "ding"
+    const ringCount = Math.max(1, Math.round(durationSec / ringEvery));
+
+    for (let i = 0; i < ringCount; i++) {
+      const startAt = now + i * ringEvery;
+      // Two stacked harmonics give it a fuller "bell" timbre
+      [880, 1320].forEach((freq, idx) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        const peak = idx === 0 ? 0.22 : 0.10;
+        gain.gain.setValueAtTime(0, startAt);
+        gain.gain.linearRampToValueAtTime(peak, startAt + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.001, startAt + 0.85);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startAt);
+        osc.stop(startAt + 0.9);
+      });
+    }
+  } catch (e) {
+    console.warn('Bell sound could not play:', e);
+  }
+}
+
+// Total awaiting count across BOTH channels (Surat + Jamnagar combined) —
+// intentionally different from the per-channel "Awaiting" nav-tab badge.
+function getTotalAwaitingCount() {
+  return (AppState.awaiting || []).length;
+}
+
+function updateBellBadge() {
+  const badge = document.getElementById('bellBadge');
+  if (!badge) return;
+  const count = getTotalAwaitingCount();
+  if (count > 0) {
+    badge.textContent = count > 99 ? '99+' : count;
+    badge.style.display = 'flex';
+  } else {
+    badge.style.display = 'none';
+  }
+}
+
+// Rings the bell + shows a popup. Call this once after the portal's data
+// has loaded (see init()).
+function ringBellNotification() {
+  const count = getTotalAwaitingCount();
+  if (count === 0) return;
+
+  const totalAmount = (AppState.awaiting || []).reduce((sum, b) => sum + parseNumber(b.amount), 0);
+
+  playBellSound(3);
+
+  const bellIcon = document.getElementById('bellIcon');
+  if (bellIcon) {
+    bellIcon.classList.add('bell-ringing');
+    setTimeout(() => bellIcon.classList.remove('bell-ringing'), 3000);
+  }
+
+  showToast(`🔔 ${count} payment${count > 1 ? 's' : ''} awaiting — ₹${formatCurrency(totalAmount)} expected`, 'warning');
+}
+
+window.updateBellBadge = updateBellBadge;
+window.ringBellNotification = ringBellNotification;
 
 window.saveData = saveData;
 window.loadData = loadData;
@@ -5574,6 +5721,9 @@ async function init() {
   
   // Load data
   await loadData();
+
+  // Ring the awaiting-payments bell now that AppState.awaiting is populated
+  ringBellNotification();
   
   // Populate WhatsApp record selector
   populateWhatsAppRecordSelect();
