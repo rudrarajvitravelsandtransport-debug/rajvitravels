@@ -1267,40 +1267,98 @@ tbody td {
   color: var(--info);
 }
 
-/* BILL ALARM PANEL (15-day recurring awaiting-payment alarm) */
+/* BILL ALARM PANEL (15-day recurring awaiting-payment alarm) — calm, collapsible, scrollable */
 .bill-alarm-container {
   position: fixed;
   top: 80px;
   right: 20px;
   z-index: 2100;
+  max-width: 340px;
+}
+
+.bill-alarm-pill {
   display: flex;
-  flex-direction: column;
-  gap: 10px;
-  max-width: 360px;
+  align-items: center;
+  gap: 8px;
+  background: var(--slate);
+  border: 1px solid var(--error);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lg);
+  padding: 8px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--error);
+  animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  user-select: none;
+}
+
+.bill-alarm-pill .ring {
+  display: inline-block;
+  animation: bellSwing 1.4s ease-in-out infinite;
+}
+
+.bill-alarm-pill .chev {
+  margin-left: 2px;
+  font-size: 10px;
+  opacity: 0.8;
+  transition: transform 0.2s ease;
+}
+
+.bill-alarm-pill.expanded .chev {
+  transform: rotate(180deg);
 }
 
 .bill-alarm-card {
+  margin-top: 8px;
   background: var(--slate);
-  border: 1px solid var(--error);
+  border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow-lg);
-  padding: 14px 16px;
-  animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 12px 14px 14px;
+  animation: toastSlideIn 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bill-alarm-card-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  color: var(--error);
-  margin-bottom: 8px;
+  color: var(--text-dim, #9aa0a6);
+  margin-bottom: 6px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
 }
 
-.bill-alarm-card-header .ring {
-  animation: bellSwing 1s ease-in-out infinite;
-  display: inline-block;
+.bill-alarm-card-close {
+  background: transparent;
+  border: none;
+  color: var(--text-dim, #9aa0a6);
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.bill-alarm-card-close:hover {
+  color: var(--paper);
+}
+
+.bill-alarm-list {
+  max-height: 280px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.bill-alarm-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.bill-alarm-list::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
 }
 
 .bill-alarm-item {
@@ -1308,7 +1366,7 @@ tbody td {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 6px 0;
+  padding: 8px 2px;
   border-top: 1px solid var(--border);
 }
 
@@ -1358,10 +1416,10 @@ tbody td {
 
 .bill-alarm-mute-all-btn {
   width: 100%;
-  margin-top: 8px;
-  background: var(--error);
-  border: none;
-  color: #fff;
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--error);
+  color: var(--error);
   border-radius: 6px;
   padding: 6px 0;
   font-size: 12px;
@@ -1370,7 +1428,8 @@ tbody td {
 }
 
 .bill-alarm-mute-all-btn:hover {
-  opacity: 0.85;
+  background: var(--error);
+  color: #fff;
 }
 
 /* DIVIDER */
@@ -5367,11 +5426,14 @@ window.ringBellNotification = ringBellNotification;
 // tone (playBellSound) is reused, no new sound assets.
 // ============================================================================
 const BILL_ALARM_INTERVAL_MS = 15 * 24 * 60 * 60 * 1000; // 15 days
-const BILL_ALARM_RING_REPEAT_MS = 90 * 1000; // re-ring every 90s while overdue & unmuted
+const BILL_ALARM_RING_REPEAT_MS = 90 * 1000; // re-ring every 90s while overdue & unmuted (only while panel is expanded/active session)
 const BILL_ALARM_MUTES_KEY = 'rajviBillAlarmMutes';
+const BILL_ALARM_LAST_LOGIN_RING_KEY = 'rajviBillAlarmLastLoginRing';
+const BILL_ALARM_LOGIN_RING_COOLDOWN_MS = 60 * 60 * 1000; // only ring-on-login once per hour, even with frequent re-logins
 
 let _billAlarmLastRingAt = 0;
 let _billAlarmIntervalHandle = null;
+let _billAlarmPanelExpanded = false;
 
 function getBillAlarmMutes() {
   try {
@@ -5419,12 +5481,30 @@ function getOverdueAwaitingBills() {
     .sort((a, b) => a.dueAt - b.dueAt);
 }
 
+function toggleBillAlarmPanel() {
+  _billAlarmPanelExpanded = !_billAlarmPanelExpanded;
+  renderBillAlarmPanel(getOverdueAwaitingBills());
+}
+
 function renderBillAlarmPanel(overdueEntries) {
   const container = document.getElementById('billAlarmContainer');
   if (!container) return;
 
   if (!overdueEntries.length) {
     container.innerHTML = '';
+    _billAlarmPanelExpanded = false;
+    return;
+  }
+
+  const pillHtml = `
+    <div class="bill-alarm-pill ${_billAlarmPanelExpanded ? 'expanded' : ''}" onclick="toggleBillAlarmPanel()">
+      <span class="ring">🔔</span>
+      <span>${overdueEntries.length} payment${overdueEntries.length > 1 ? 's' : ''} need follow-up</span>
+      <span class="chev">▾</span>
+    </div>`;
+
+  if (!_billAlarmPanelExpanded) {
+    container.innerHTML = pillHtml;
     return;
   }
 
@@ -5442,9 +5522,13 @@ function renderBillAlarmPanel(overdueEntries) {
   }).join('');
 
   container.innerHTML = `
+    ${pillHtml}
     <div class="bill-alarm-card">
-      <div class="bill-alarm-card-header"><span class="ring">🔔</span> ${overdueEntries.length} payment${overdueEntries.length > 1 ? 's' : ''} need follow-up (15+ days)</div>
-      ${itemsHtml}
+      <div class="bill-alarm-card-header">
+        <span>Awaiting payment follow-ups</span>
+        <button class="bill-alarm-card-close" onclick="toggleBillAlarmPanel()">✕</button>
+      </div>
+      <div class="bill-alarm-list">${itemsHtml}</div>
       <button class="bill-alarm-mute-all-btn" onclick="muteAllBillAlarms()">Mute All — remind again in 15 days</button>
     </div>`;
 }
@@ -5474,6 +5558,11 @@ function muteAllBillAlarms() {
 // reminder panel, and (re-)plays the bell tone while any are unmuted.
 // Also keeps the service worker's copy of bill/mute data fresh so it can
 // fire background notifications independently of this in-page check.
+//
+// The panel itself (pill + scrollable list) is always kept up to date —
+// only the actual ring (sound + toast) is throttled, so logging in 5 times
+// in 10 minutes won't make it ring 5 times. It rings at most once per hour,
+// regardless of how often the user logs in during that hour.
 function checkBillAlarms() {
   const overdue = getOverdueAwaitingBills();
   renderBillAlarmPanel(overdue);
@@ -5483,9 +5572,15 @@ function checkBillAlarms() {
     return;
   }
 
+  const lastLoginRing = parseInt(localStorage.getItem(BILL_ALARM_LAST_LOGIN_RING_KEY) || '0', 10);
+  const sinceLastLoginRing = Date.now() - lastLoginRing;
   const sinceLastRing = Date.now() - _billAlarmLastRingAt;
-  if (sinceLastRing >= BILL_ALARM_RING_REPEAT_MS) {
+
+  // Only actually ring if it's been at least an hour since the last ring on
+  // this device (covers both repeated logins and the periodic in-page check).
+  if (sinceLastLoginRing >= BILL_ALARM_LOGIN_RING_COOLDOWN_MS && sinceLastRing >= BILL_ALARM_RING_REPEAT_MS) {
     _billAlarmLastRingAt = Date.now();
+    localStorage.setItem(BILL_ALARM_LAST_LOGIN_RING_KEY, String(Date.now()));
     playBellSound(6);
     const bellIcon = document.getElementById('bellIcon');
     if (bellIcon) {
@@ -5515,6 +5610,7 @@ window.muteBillAlarm = muteBillAlarm;
 window.muteAllBillAlarms = muteAllBillAlarms;
 window.checkBillAlarms = checkBillAlarms;
 window.startBillAlarmWatcher = startBillAlarmWatcher;
+window.toggleBillAlarmPanel = toggleBillAlarmPanel;
 
 // ============================================================================
 // BACKGROUND NOTIFICATIONS (Service Worker)
