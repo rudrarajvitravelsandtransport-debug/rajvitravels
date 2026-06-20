@@ -1267,6 +1267,112 @@ tbody td {
   color: var(--info);
 }
 
+/* BILL ALARM PANEL (15-day recurring awaiting-payment alarm) */
+.bill-alarm-container {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  z-index: 2100;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 360px;
+}
+
+.bill-alarm-card {
+  background: var(--slate);
+  border: 1px solid var(--error);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 14px 16px;
+  animation: toastSlideIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.bill-alarm-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--error);
+  margin-bottom: 8px;
+}
+
+.bill-alarm-card-header .ring {
+  animation: bellSwing 1s ease-in-out infinite;
+  display: inline-block;
+}
+
+.bill-alarm-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.bill-alarm-item:first-of-type {
+  border-top: none;
+}
+
+.bill-alarm-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.bill-alarm-item-company {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--paper);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.bill-alarm-item-meta {
+  font-size: 11px;
+  color: var(--text-dim, #9aa0a6);
+}
+
+.bill-alarm-mute-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--paper);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.bill-alarm-mute-btn:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.bill-alarm-mute-all-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: var(--error);
+  border: none;
+  color: #fff;
+  border-radius: 6px;
+  padding: 6px 0;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.bill-alarm-mute-all-btn:hover {
+  opacity: 0.85;
+}
+
 /* DIVIDER */
 .divider {
   height: 1px;
@@ -1498,6 +1604,7 @@ tbody td {
 
 <!-- TOAST CONTAINER -->
 <div class="toast-container" id="toastContainer"></div>
+<div class="bill-alarm-container" id="billAlarmContainer"></div>
 
 <!-- TOPBAR -->
 <div class="topbar">
@@ -3817,9 +3924,14 @@ function markAsAwaiting(billId) {
   bill.markedAwaitingAt = now;
   
   // Add to awaiting list
+  // awaitingTimestamp = exact epoch ms the bill entered awaiting status.
+  // This is what the 15-day recurring alarm system uses for precise date math
+  // (awaitingFrom is just a human-readable display string and isn't reliable
+  // for date arithmetic across locales).
   AppState.awaiting.push({
     ...bill,
-    awaitingFrom: now
+    awaitingFrom: now,
+    awaitingTimestamp: Date.now()
   });
 
   // Remove from bills so it doesn't show as pending anymore
@@ -4211,6 +4323,14 @@ function confirmReceivePayment() {
   AppState.bills = AppState.bills.filter(b => b.id !== billId);
   // Clean up per-bill override so the map doesn't grow forever
   if (AppState.awaitingChannelOverrides) delete AppState.awaitingChannelOverrides[billId];
+  // Clean up its 15-day alarm mute entry too, since it's no longer awaiting
+  if (typeof getBillAlarmMutes === 'function') {
+    const _mutes = getBillAlarmMutes();
+    if (_mutes[billId] !== undefined) {
+      delete _mutes[billId];
+      saveBillAlarmMutes(_mutes);
+    }
+  }
   
   saveData()
     .then(() => {
@@ -5234,6 +5354,272 @@ function ringBellNotification() {
 window.updateBellBadge = updateBellBadge;
 window.ringBellNotification = ringBellNotification;
 
+// ============================================================================
+// 15-DAY RECURRING BILL ALARM SYSTEM
+// ----------------------------------------------------------------------------
+// Rule: for every bill sitting in "Awaiting", an alarm goes off exactly
+// 15 days after the bill was put into awaiting, and a notification is shown
+// for THAT bill only. The user can "mute" an individual bill's alarm, which
+// silences it — then it rings again 15 days after the mute, and keeps
+// repeating every 15 days for as long as the bill remains in awaiting.
+// No Firebase Storage / extra backend is used for this — mute timestamps are
+// kept in the browser's localStorage only, and the existing Web Audio bell
+// tone (playBellSound) is reused, no new sound assets.
+// ============================================================================
+const BILL_ALARM_INTERVAL_MS = 15 * 24 * 60 * 60 * 1000; // 15 days
+const BILL_ALARM_RING_REPEAT_MS = 90 * 1000; // re-ring every 90s while overdue & unmuted
+const BILL_ALARM_MUTES_KEY = 'rajviBillAlarmMutes';
+
+let _billAlarmLastRingAt = 0;
+let _billAlarmIntervalHandle = null;
+
+function getBillAlarmMutes() {
+  try {
+    return JSON.parse(localStorage.getItem(BILL_ALARM_MUTES_KEY) || '{}');
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveBillAlarmMutes(mutes) {
+  try {
+    localStorage.setItem(BILL_ALARM_MUTES_KEY, JSON.stringify(mutes));
+  } catch (e) {
+    console.warn('Could not persist bill alarm mutes:', e);
+  }
+}
+
+// Resolves the exact moment a bill entered "awaiting" status, in epoch ms.
+// Falls back to parsing the human-readable awaitingFrom string for bills
+// created before the awaitingTimestamp field existed.
+function getBillAwaitingStartMs(bill) {
+  if (bill.awaitingTimestamp) return bill.awaitingTimestamp;
+  const parsed = Date.parse(bill.awaitingFrom || bill.markedAwaitingAt || '');
+  return isNaN(parsed) ? Date.now() : parsed;
+}
+
+// The next time this specific bill's alarm should ring: either 15 days after
+// it first became awaiting, or — if the user has muted it since — 15 days
+// after that last mute. This is what makes the alarm recur every 15 days
+// indefinitely until the bill is no longer awaiting.
+function getBillNextAlarmMs(bill, mutes) {
+  const start = getBillAwaitingStartMs(bill);
+  const lastMute = mutes[bill.id];
+  const base = lastMute && lastMute > start ? lastMute : start;
+  return base + BILL_ALARM_INTERVAL_MS;
+}
+
+function getOverdueAwaitingBills() {
+  const mutes = getBillAlarmMutes();
+  const list = AppState.awaiting || [];
+  const now = Date.now();
+  return list
+    .filter(b => now >= getBillNextAlarmMs(b, mutes))
+    .map(b => ({ bill: b, dueAt: getBillNextAlarmMs(b, mutes) }))
+    .sort((a, b) => a.dueAt - b.dueAt);
+}
+
+function renderBillAlarmPanel(overdueEntries) {
+  const container = document.getElementById('billAlarmContainer');
+  if (!container) return;
+
+  if (!overdueEntries.length) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const itemsHtml = overdueEntries.map(({ bill, dueAt }) => {
+    const daysOverdue = Math.max(0, Math.floor((Date.now() - dueAt) / (24 * 60 * 60 * 1000)));
+    const overdueLabel = daysOverdue === 0 ? 'due today' : `${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue`;
+    return `
+      <div class="bill-alarm-item">
+        <div class="bill-alarm-item-info">
+          <span class="bill-alarm-item-company">${(bill.company || 'Unknown')}</span>
+          <span class="bill-alarm-item-meta">₹${formatCurrency(parseNumber(bill.amount))} · ${overdueLabel}</span>
+        </div>
+        <button class="bill-alarm-mute-btn" onclick="muteBillAlarm('${bill.id}')">Mute</button>
+      </div>`;
+  }).join('');
+
+  container.innerHTML = `
+    <div class="bill-alarm-card">
+      <div class="bill-alarm-card-header"><span class="ring">🔔</span> ${overdueEntries.length} payment${overdueEntries.length > 1 ? 's' : ''} need follow-up (15+ days)</div>
+      ${itemsHtml}
+      <button class="bill-alarm-mute-all-btn" onclick="muteAllBillAlarms()">Mute All — remind again in 15 days</button>
+    </div>`;
+}
+
+// Silences one bill's alarm. It will automatically ring again 15 days from now.
+function muteBillAlarm(billId) {
+  const mutes = getBillAlarmMutes();
+  mutes[billId] = Date.now();
+  saveBillAlarmMutes(mutes);
+  checkBillAlarms();
+  showToast('Reminder muted — will ring again in 15 days', 'info');
+}
+
+// Silences every currently-overdue bill alarm at once.
+function muteAllBillAlarms() {
+  const mutes = getBillAlarmMutes();
+  const now = Date.now();
+  getOverdueAwaitingBills().forEach(({ bill }) => {
+    mutes[bill.id] = now;
+  });
+  saveBillAlarmMutes(mutes);
+  checkBillAlarms();
+  showToast('All reminders muted — will ring again in 15 days', 'info');
+}
+
+// Runs periodically: finds overdue awaiting-payment bills, renders the
+// reminder panel, and (re-)plays the bell tone while any are unmuted.
+// Also keeps the service worker's copy of bill/mute data fresh so it can
+// fire background notifications independently of this in-page check.
+function checkBillAlarms() {
+  const overdue = getOverdueAwaitingBills();
+  renderBillAlarmPanel(overdue);
+  syncBillsToServiceWorker();
+
+  if (overdue.length === 0) {
+    return;
+  }
+
+  const sinceLastRing = Date.now() - _billAlarmLastRingAt;
+  if (sinceLastRing >= BILL_ALARM_RING_REPEAT_MS) {
+    _billAlarmLastRingAt = Date.now();
+    playBellSound(6);
+    const bellIcon = document.getElementById('bellIcon');
+    if (bellIcon) {
+      bellIcon.classList.add('bell-ringing');
+      setTimeout(() => bellIcon.classList.remove('bell-ringing'), 6000);
+    }
+    const names = overdue.slice(0, 3).map(o => o.bill.company).join(', ');
+    showToast(`🔔 Follow-up due: ${names}${overdue.length > 3 ? ` +${overdue.length - 3} more` : ''}`, 'warning');
+  }
+}
+
+// Starts the recurring check (every 30s is enough — we only care about
+// day-level precision, not seconds). Also registers the background-
+// notification service worker and asks for permission on this device.
+function startBillAlarmWatcher() {
+  checkBillAlarms();
+  if (_billAlarmIntervalHandle) clearInterval(_billAlarmIntervalHandle);
+  _billAlarmIntervalHandle = setInterval(checkBillAlarms, 30 * 1000);
+
+  registerBillAlarmServiceWorker().then(() => {
+    syncBillsToServiceWorker();
+    maybePromptForNotificationPermission();
+  });
+}
+
+window.muteBillAlarm = muteBillAlarm;
+window.muteAllBillAlarms = muteAllBillAlarms;
+window.checkBillAlarms = checkBillAlarms;
+window.startBillAlarmWatcher = startBillAlarmWatcher;
+
+// ============================================================================
+// BACKGROUND NOTIFICATIONS (Service Worker)
+// ----------------------------------------------------------------------------
+// Lets the 15-day bill follow-up alarm show a native OS notification even
+// when the portal tab isn't focused, as long as the browser is running in
+// the background on that device. Free — uses the browser's own Notification
+// + Service Worker APIs, no Firebase Cloud Messaging / push server.
+//
+// IMPORTANT: each device needs its own permission grant. Logging in on a new
+// phone/laptop will show the prompt again on that device.
+// ============================================================================
+let _swRegistration = null;
+const NOTIF_PERMISSION_ASKED_KEY = 'rajviNotifPermissionAsked';
+
+async function registerBillAlarmServiceWorker() {
+  if (!('serviceWorker' in navigator)) {
+    console.warn('Service workers not supported in this browser.');
+    return;
+  }
+  try {
+    _swRegistration = await navigator.serviceWorker.register('./sw.js');
+    console.log('✅ Bill alarm service worker registered');
+  } catch (e) {
+    console.warn('Service worker registration failed:', e);
+  }
+}
+
+// Sends the latest awaiting-bill list + mute map to the service worker so it
+// can independently decide when to fire a background notification.
+function syncBillsToServiceWorker() {
+  if (!_swRegistration || !_swRegistration.active) return;
+  const bills = (AppState.awaiting || []).map(b => ({
+    id: b.id,
+    company: b.company,
+    amount: parseNumber(b.amount),
+    awaitingTimestamp: getBillAwaitingStartMs(b)
+  }));
+  const mutes = getBillAlarmMutes();
+  _swRegistration.active.postMessage({ type: 'SYNC_BILLS', bills, mutes });
+}
+
+// Shows a friendly, low-pressure explainer before the actual browser
+// permission prompt (cold browser prompts get dismissed/blocked more often).
+function maybePromptForNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'granted' || Notification.permission === 'denied') {
+    return; // already decided, nothing to do
+  }
+  if (localStorage.getItem(NOTIF_PERMISSION_ASKED_KEY) === 'true') {
+    return; // don't nag every single login
+  }
+
+  showConfirmDialog(
+    '🔔 Enable payment reminders?',
+    'Allow notifications so this device alerts you about overdue vendor payments — even if this tab isn\'t open.',
+    () => {
+      localStorage.setItem(NOTIF_PERMISSION_ASKED_KEY, 'true');
+      Notification.requestPermission().then((permission) => {
+        if (permission === 'granted') {
+          showToast('Notifications enabled on this device', 'success');
+          syncBillsToServiceWorker();
+        }
+      });
+    },
+    () => {
+      localStorage.setItem(NOTIF_PERMISSION_ASKED_KEY, 'true');
+    }
+  );
+}
+
+// Minimal confirm dialog using existing modal styling, since this app has no
+// generic confirm() helper for non-blocking custom-styled prompts.
+function showConfirmDialog(title, message, onAccept, onDecline) {
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay open';
+  overlay.innerHTML = `
+    <div class="modal" style="max-width:380px;">
+      <div class="modal-header">
+        <h2 class="modal-title">${title}</h2>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:14px; color:var(--paper); line-height:1.5;">${message}</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" id="notifDeclineBtn">Not now</button>
+        <button class="btn btn-primary" id="notifAcceptBtn">Allow</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#notifAcceptBtn').onclick = () => {
+    document.body.removeChild(overlay);
+    onAccept && onAccept();
+  };
+  overlay.querySelector('#notifDeclineBtn').onclick = () => {
+    document.body.removeChild(overlay);
+    onDecline && onDecline();
+  };
+}
+
+window.registerBillAlarmServiceWorker = registerBillAlarmServiceWorker;
+window.syncBillsToServiceWorker = syncBillsToServiceWorker;
+window.maybePromptForNotificationPermission = maybePromptForNotificationPermission;
+
 window.saveData = saveData;
 window.loadData = loadData;
 
@@ -5724,6 +6110,9 @@ async function init() {
 
   // Ring the awaiting-payments bell now that AppState.awaiting is populated
   ringBellNotification();
+
+  // Start the 15-day recurring per-bill follow-up alarm watcher
+  startBillAlarmWatcher();
   
   // Populate WhatsApp record selector
   populateWhatsAppRecordSelect();
