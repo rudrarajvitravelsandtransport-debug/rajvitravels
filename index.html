@@ -5419,6 +5419,27 @@ function updateBadges() {
 // BELL NOTIFICATION (Awaiting Payments) — topbar bell + opening chime
 // ============================================================================
 let _bellAudioCtx = null;
+let _bellSoundPendingDurationSec = null; // queued tone, fires once the user interacts (autoplay policy workaround)
+let _bellUnlockListenerAttached = false;
+
+function _attachBellUnlockListener() {
+  if (_bellUnlockListenerAttached) return;
+  _bellUnlockListenerAttached = true;
+  const unlock = () => {
+    if (_bellAudioCtx && _bellAudioCtx.state === 'suspended') {
+      _bellAudioCtx.resume();
+    }
+    if (_bellSoundPendingDurationSec !== null) {
+      const dur = _bellSoundPendingDurationSec;
+      _bellSoundPendingDurationSec = null;
+      playBellSound(dur);
+    }
+  };
+  ['click', 'touchstart', 'keydown'].forEach(evt => {
+    document.addEventListener(evt, unlock, { once: false, passive: true });
+  });
+}
+_attachBellUnlockListener();
 
 // Generates a short bell/chime tone using the Web Audio API (no external
 // audio file needed). Rings repeatedly across `durationSec` seconds.
@@ -5428,7 +5449,13 @@ function playBellSound(durationSec = 8) {
       _bellAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     }
     if (_bellAudioCtx.state === 'suspended') {
-      _bellAudioCtx.resume();
+      // Browser autoplay policy is blocking sound because there's been no
+      // user gesture yet (e.g. this is firing right on page load for the
+      // daily popup). Queue it — it'll play the instant the user clicks,
+      // taps, or presses any key anywhere on the page.
+      _bellSoundPendingDurationSec = durationSec;
+      _bellAudioCtx.resume().catch(() => {});
+      return;
     }
     const ctx = _bellAudioCtx;
     const now = ctx.currentTime;
