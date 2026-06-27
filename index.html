@@ -2703,49 +2703,23 @@ tbody td {
         <h1 class="section-title">Google <span class="highlight">Drive</span></h1>
         <p class="section-subtitle">View shared Drive files directly — no sign-in required</p>
       </div>
-      <div class="section-actions">
-        <a href="https://drive.google.com/drive/folders/1YjbhtYhp_SKeVhnDg1VkuPOufJXKBGyO?usp=drive_link" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Open Folder</a>
-        <a href="https://docs.google.com/spreadsheets/d/1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I/edit?usp=drive_link" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Surat Office</a>
-        <a href="https://docs.google.com/spreadsheets/d/1ELKDvjHn78roNEMfoXf3oCfSiT7RcpSJLu9YQ1eu9nw/edit?usp=sharing" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ Forever Hotel</a>
+      <div class="section-actions" id="driveOpenLinksContainer">
+        <!-- "↗ Open" links rendered dynamically by driveRenderTabs() -->
       </div>
     </div>
 
-    <!-- Tab switcher -->
-    <div style="display:flex;gap:8px;margin-bottom:16px;">
-      <button id="driveTab1" onclick="driveShowTab(1)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--rust);background:var(--rust);color:#fff;font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">🗂️ Shared Folder</button>
-      <button id="driveTab2" onclick="driveShowTab(2)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 Surat Office</button>
-      <button id="driveTab3" onclick="driveShowTab(3)" style="padding:9px 22px;border-radius:8px;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📊 Forever Hotel</button>
+    <!-- Paste-link-to-add row -->
+    <div class="card" style="padding:14px 16px;margin-bottom:16px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <input type="text" id="driveLinkInput" class="form-input" placeholder="Paste a Google Drive / Sheets / Docs / Slides sharing link here…" style="flex:1;min-width:220px;margin:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();driveAddLink();}">
+      <input type="text" id="driveLinkLabel" class="form-input" placeholder="Label (optional)" style="width:170px;margin:0;" onkeydown="if(event.key==='Enter'){event.preventDefault();driveAddLink();}">
+      <button class="btn btn-primary" onclick="driveAddLink()">＋ Add</button>
     </div>
 
-    <!-- Drive Folder Embed -->
-    <div id="drivePane1" class="card" style="padding:0;overflow:hidden;border-radius:var(--radius);border:1px solid var(--border);">
-      <iframe
-        src="https://drive.google.com/embeddedfolderview?id=1YjbhtYhp_SKeVhnDg1VkuPOufJXKBGyO#list"
-        style="width:100%;height:600px;border:none;background:#fff;"
-        allowfullscreen
-        title="Shared Drive Folder">
-      </iframe>
-    </div>
+    <!-- Tab switcher (rendered dynamically) -->
+    <div id="driveTabsContainer" style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;"></div>
 
-    <!-- Spreadsheet Embed -->
-    <div id="drivePane2" class="card" style="padding:0;overflow:hidden;border-radius:var(--radius);border:1px solid var(--border);display:none;">
-      <iframe
-        src="https://docs.google.com/spreadsheets/d/1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I/preview"
-        style="width:100%;height:600px;border:none;background:#fff;"
-        allowfullscreen
-        title="Shared Spreadsheet">
-      </iframe>
-    </div>
-
-    <!-- Spreadsheet 2 Embed -->
-    <div id="drivePane3" class="card" style="padding:0;overflow:hidden;border-radius:var(--radius);border:1px solid var(--border);display:none;">
-      <iframe
-        src="https://docs.google.com/spreadsheets/d/1ELKDvjHn78roNEMfoXf3oCfSiT7RcpSJLu9YQ1eu9nw/preview"
-        style="width:100%;height:600px;border:none;background:#fff;"
-        allowfullscreen
-        title="Shared Spreadsheet 2">
-      </iframe>
-    </div>
+    <!-- Embed panes (rendered dynamically) -->
+    <div id="drivePanesContainer"></div>
   </section>
 
 
@@ -2892,22 +2866,153 @@ tbody td {
   .drive-empty { text-align:center;padding:60px 20px;color:var(--text-dim); }
 </style>
 
-<!-- Drive tab switcher function -->
+<!-- Drive tabs/panes — dynamic link system -->
 <script>
-function driveShowTab(n) {
-  document.getElementById('drivePane1').style.display = n === 1 ? 'block' : 'none';
-  document.getElementById('drivePane2').style.display = n === 2 ? 'block' : 'none';
-  document.getElementById('drivePane3').style.display = n === 3 ? 'block' : 'none';
-  document.getElementById('driveTab1').style.background    = n === 1 ? 'var(--rust)' : 'transparent';
-  document.getElementById('driveTab1').style.color         = n === 1 ? '#fff' : 'var(--text-dim)';
-  document.getElementById('driveTab1').style.borderColor   = n === 1 ? 'var(--rust)' : 'var(--border)';
-  document.getElementById('driveTab2').style.background    = n === 2 ? 'var(--rust)' : 'transparent';
-  document.getElementById('driveTab2').style.color         = n === 2 ? '#fff' : 'var(--text-dim)';
-  document.getElementById('driveTab2').style.borderColor   = n === 2 ? 'var(--rust)' : 'var(--border)';
-  document.getElementById('driveTab3').style.background    = n === 3 ? 'var(--rust)' : 'transparent';
-  document.getElementById('driveTab3').style.color         = n === 3 ? '#fff' : 'var(--text-dim)';
-  document.getElementById('driveTab3').style.borderColor   = n === 3 ? 'var(--rust)' : 'var(--border)';
+// Built-in tabs that always exist (cannot be removed).
+const DRIVE_DEFAULT_LINKS = [
+  { driveId: '1YjbhtYhp_SKeVhnDg1VkuPOufJXKBGyO', type: 'folder', kind: null,
+    label: 'Shared Folder', icon: '🗂️',
+    openUrl: 'https://drive.google.com/drive/folders/1YjbhtYhp_SKeVhnDg1VkuPOufJXKBGyO?usp=drive_link' },
+  { driveId: '1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I', type: 'file', kind: 'spreadsheets',
+    label: 'Surat Office', icon: '📊',
+    openUrl: 'https://docs.google.com/spreadsheets/d/1hLZhvcDDoWNtKlpELb7zdworOwrKp1Uw84V7Q5A460I/edit?usp=drive_link' },
+  { driveId: '1ELKDvjHn78roNEMfoXf3oCfSiT7RcpSJLu9YQ1eu9nw', type: 'file', kind: 'spreadsheets',
+    label: 'Forever Hotel', icon: '📊',
+    openUrl: 'https://docs.google.com/spreadsheets/d/1ELKDvjHn78roNEMfoXf3oCfSiT7RcpSJLu9YQ1eu9nw/edit?usp=sharing' }
+].map((l, i) => ({ ...l, id: 'default' + i, custom: false }));
+
+// Full working list = defaults + custom (custom ones come from AppState.driveLinks, loaded from Firebase)
+let driveLinks = [...DRIVE_DEFAULT_LINKS];
+let driveActiveId = DRIVE_DEFAULT_LINKS[0].id;
+
+// Parse a pasted Google Drive / Docs / Sheets / Slides sharing link.
+// Returns { type: 'folder'|'file', kind: 'spreadsheets'|'document'|'presentation'|null, driveId } or null if unrecognized.
+function parseDriveLink(url) {
+  if (!url) return null;
+  url = url.trim();
+
+  let m = url.match(/drive\.google\.com\/drive\/folders\/([a-zA-Z0-9_-]+)/);
+  if (m) return { type: 'folder', kind: null, driveId: m[1] };
+
+  m = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return { type: 'file', kind: null, driveId: m[1] };
+
+  m = url.match(/docs\.google\.com\/(spreadsheets|document|presentation)\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return { type: 'file', kind: m[1], driveId: m[2] };
+
+  // Generic "...?id=XXXX" or "...&id=XXXX" style links (older sharing format)
+  m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (m) return { type: 'file', kind: null, driveId: m[1] };
+
+  return null;
 }
+
+function driveBuildEmbedSrc(link) {
+  if (link.type === 'folder') {
+    return `https://drive.google.com/embeddedfolderview?id=${link.driveId}#list`;
+  }
+  if (link.kind) {
+    return `https://docs.google.com/${link.kind}/d/${link.driveId}/preview`;
+  }
+  return `https://drive.google.com/file/d/${link.driveId}/preview`;
+}
+
+function driveIconFor(parsed) {
+  if (parsed.type === 'folder') return '🗂️';
+  if (parsed.kind === 'spreadsheets') return '📊';
+  if (parsed.kind === 'document') return '📝';
+  if (parsed.kind === 'presentation') return '📽️';
+  return '📄';
+}
+
+function driveAddLink() {
+  const urlInput   = document.getElementById('driveLinkInput');
+  const labelInput = document.getElementById('driveLinkLabel');
+  const url = urlInput.value.trim();
+
+  if (!url) { showToast('Paste a Drive link first', 'error'); return; }
+
+  const parsed = parseDriveLink(url);
+  if (!parsed) {
+    showToast('Could not recognize that link — paste a Drive, Sheets, Docs, or Slides sharing link', 'error');
+    return;
+  }
+
+  const label = labelInput.value.trim() || (parsed.type === 'folder' ? 'Drive Folder' : 'Drive File');
+
+  const newLink = {
+    id: 'custom_' + Date.now(),
+    label,
+    icon: driveIconFor(parsed),
+    type: parsed.type,
+    kind: parsed.kind,
+    driveId: parsed.driveId,
+    openUrl: url,
+    custom: true
+  };
+
+  driveLinks.push(newLink);
+  AppState.driveLinks = driveLinks.filter(l => l.custom);
+  saveData();
+
+  urlInput.value = '';
+  labelInput.value = '';
+
+  driveRenderTabs();
+  driveShowTab(newLink.id);
+  showToast(`"${label}" added`, 'success');
+}
+
+function driveRemoveLink(id) {
+  const link = driveLinks.find(l => l.id === id);
+  if (!link || !link.custom) return; // only custom (user-added) tabs can be removed
+  if (!confirm(`Remove "${link.label}" from Drive tabs?`)) return;
+
+  driveLinks = driveLinks.filter(l => l.id !== id);
+  AppState.driveLinks = driveLinks.filter(l => l.custom);
+  saveData();
+
+  if (driveActiveId === id) driveActiveId = driveLinks[0].id;
+  driveRenderTabs();
+}
+
+function driveRenderTabs() {
+  const tabsEl  = document.getElementById('driveTabsContainer');
+  const panesEl = document.getElementById('drivePanesContainer');
+  const openEl  = document.getElementById('driveOpenLinksContainer');
+  if (!tabsEl || !panesEl) return;
+
+  tabsEl.innerHTML = driveLinks.map(link => {
+    const active = link.id === driveActiveId;
+    const removeBtn = link.custom
+      ? `<span onclick="event.stopPropagation();driveRemoveLink('${link.id}')" style="margin-left:8px;opacity:.65;font-weight:400;">✕</span>`
+      : '';
+    return `<button onclick="driveShowTab('${link.id}')" style="padding:9px 18px;border-radius:8px;border:1.5px solid ${active ? 'var(--rust)' : 'var(--border)'};background:${active ? 'var(--rust)' : 'transparent'};color:${active ? '#fff' : 'var(--text-dim)'};font-family:'Manrope',sans-serif;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;">${link.icon} ${link.label}${removeBtn}</button>`;
+  }).join('');
+
+  panesEl.innerHTML = driveLinks.map(link => {
+    const display = link.id === driveActiveId ? 'block' : 'none';
+    return `<div id="drivePane_${link.id}" class="card" style="padding:0;overflow:hidden;border-radius:var(--radius);border:1px solid var(--border);display:${display};">
+      <iframe src="${driveBuildEmbedSrc(link)}" style="width:100%;height:600px;border:none;background:#fff;" allowfullscreen title="${link.label}"></iframe>
+    </div>`;
+  }).join('');
+
+  if (openEl) {
+    openEl.innerHTML = driveLinks.map(link =>
+      `<a href="${link.openUrl}" target="_blank" class="btn btn-secondary" style="text-decoration:none;">↗ ${link.label}</a>`
+    ).join('');
+  }
+}
+
+function driveShowTab(id) {
+  driveActiveId = id;
+  driveRenderTabs();
+}
+
+window.driveAddLink    = driveAddLink;
+window.driveRemoveLink = driveRemoveLink;
+window.driveShowTab    = driveShowTab;
+window.driveRenderTabs = driveRenderTabs;
 </script>
 
 
@@ -3416,7 +3521,8 @@ window.AppState = {
   extraSuratCompanies: [],
   jamnagarExceptions: [],
   awaitingChannelOverrides: {},
-  activePartnerListTab: 'kk'  // 'kk' or 'office' — which Surat list tab is active
+  activePartnerListTab: 'kk',  // 'kk' or 'office' — which Surat list tab is active
+  driveLinks: []  // user-added Drive/Sheets/Docs links pasted into the Drive tab
 };
 
 // ── Fixed partner lists (pre-seeded, editable per-partner % only) ─────────────
@@ -5291,7 +5397,8 @@ async function saveData() {
       completed:               AppState.completed,
       extraSuratCompanies:     AppState.extraSuratCompanies     || [],
       jamnagarExceptions:      AppState.jamnagarExceptions      || [],
-      awaitingChannelOverrides: AppState.awaitingChannelOverrides || {}
+      awaitingChannelOverrides: AppState.awaitingChannelOverrides || {},
+      driveLinks:              AppState.driveLinks              || []
     };
 
     // Save to localStorage
@@ -5333,6 +5440,7 @@ async function loadData() {
       AppState.extraSuratCompanies = data.extraSuratCompanies || [];
       AppState.jamnagarExceptions = data.jamnagarExceptions || [];
       AppState.awaitingChannelOverrides = data.awaitingChannelOverrides || {};
+      AppState.driveLinks = data.driveLinks || [];
       console.log('✅ Data loaded from Firebase');
     } else {
       // Fallback to localStorage
@@ -5347,10 +5455,16 @@ async function loadData() {
         AppState.extraSuratCompanies = parsed.extraSuratCompanies || [];
         AppState.jamnagarExceptions = parsed.jamnagarExceptions || [];
         AppState.awaitingChannelOverrides = parsed.awaitingChannelOverrides || {};
+        AppState.driveLinks = parsed.driveLinks || [];
         console.log('✅ Data loaded from localStorage');
       }
     }
     
+    // Rebuild Drive tabs: built-in defaults + any custom links loaded from Firebase/localStorage
+    driveLinks = [...DRIVE_DEFAULT_LINKS, ...(AppState.driveLinks || [])];
+    driveActiveId = driveLinks[0].id;
+    driveRenderTabs();
+
     // Render all sections
     renderPartners();
     renderBills();
