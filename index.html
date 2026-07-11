@@ -7450,23 +7450,19 @@ console.log("✅ Hotel MIS module loaded");
      CC/OD INTEREST & PAYOUT REPORT — Firebase Logic (main rajvi-portal project)
      ============================================================================ -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc,
   deleteDoc, serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-// Reuse the same rajvi-portal Firebase project, but as a distinct named app
-// instance (same pattern as the Hotel MIS module) so it doesn't collide with
-// the primary app() instance initialized earlier on this page.
-const ccodApp = initializeApp({
-  apiKey: "AIzaSyCModhaUB6fLdhALu65ju2N0BPV_3nHKfQ",
-  authDomain: "rajvi-portal.firebaseapp.com",
-  projectId: "rajvi-portal",
-  storageBucket: "rajvi-portal.firebasestorage.app",
-  messagingSenderId: "935033381558",
-  appId: "1:935033381558:web:5e15faa28b78d805aabc17"
-}, "ccodModule");
+// Reuse the SAME already-initialized, already-authenticated Firebase app
+// instance that the login/main script created (getApp() with no name
+// returns the default app). This is what makes Firestore see these requests
+// as coming from the logged-in user — a separate initializeApp() call here
+// would create its own, unauthenticated connection and every write would be
+// rejected with "Missing or insufficient permissions".
+const ccodApp = getApp();
 
 const ccodDB = getFirestore(ccodApp);
 const CCOD_COL = "ccod_accounts";
