@@ -2314,6 +2314,10 @@ tbody td {
         <div class="stat-value" id="mpStatReceived">₹0</div>
         <div class="stat-label">Total Received</div>
       </div>
+      <div class="stat-card">
+        <div class="stat-value" id="mpStatVendor">₹0</div>
+        <div class="stat-label">Total Vendor</div>
+      </div>
       <div class="stat-card" style="border-color:rgba(39,174,96,0.4);">
         <div class="stat-value" style="color:var(--success);" id="mpStatProfit">₹0</div>
         <div class="stat-label">Net Profit</div>
@@ -2328,7 +2332,7 @@ tbody td {
       </div>
       <div class="stat-card" style="border-color:rgba(255,255,255,0.15);">
         <div class="stat-value" id="mpStatFinal">—</div>
-        <div class="stat-label">Final Cash On Hand</div>
+        <div class="stat-label">Original Profit</div>
       </div>
     </div>
 
@@ -2397,19 +2401,6 @@ tbody td {
           <span class="card-icon">✉️</span>
           Email Details
         </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label">Company</label>
-        <select class="form-select" id="mailCompany" onchange="buildEmail()">
-          <option value="">Select Company</option>
-          <option value="__custom__">Custom Company Name</option>
-        </select>
-      </div>
-
-      <div class="form-group" id="customCompanyGroup" style="display:none">
-        <label class="form-label">Custom Company Name</label>
-        <input type="text" class="form-input" id="mailCompanyCustom" oninput="buildEmail()" placeholder="Enter company name">
       </div>
 
       <div class="form-grid form-grid-2">
@@ -2874,6 +2865,41 @@ tbody td {
       <button class="btn btn-primary" onclick="ccodOpenAccountModal()">＋ Add Account</button>
     </div>
 
+    <!-- Quick Sandbox Calculator (not saved anywhere — just for working numbers out) -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <div class="card-title"><span class="card-icon">🧮</span> Quick Interest Calculator</div>
+        <span style="font-size:11px;color:var(--text-dim);">Sandbox — nothing here is saved to an account</span>
+      </div>
+
+      <div class="form-grid form-grid-2" style="margin-top:14px;">
+        <div class="form-group mb-0">
+          <label class="form-label">Loan / Opening Amount (₹)</label>
+          <input type="number" class="form-input" id="ccodCalcLoan" min="0" placeholder="e.g. 1660000" oninput="ccodCalcRun()">
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Interest Rate (% yearly)</label>
+          <input type="number" step="0.01" class="form-input" id="ccodCalcRate" min="0" placeholder="e.g. 18.5" oninput="ccodCalcRun()">
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Start Date</label>
+          <input type="date" class="form-input" id="ccodCalcStart" onchange="ccodCalcRun()">
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">Calculate As Of</label>
+          <input type="date" class="form-input" id="ccodCalcAsOf" onchange="ccodCalcRun()">
+        </div>
+      </div>
+
+      <div style="margin-top:16px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">Adjustments (repayments or extra draws)</div>
+        <div id="ccodCalcAdjRows" style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px;"></div>
+        <button type="button" class="ccod-txn-add" onclick="ccodCalcAddAdjustment()">＋ Add Adjustment</button>
+      </div>
+
+      <div id="ccodCalcResult" style="margin-top:18px;"></div>
+    </div>
+
     <!-- Overall Summary Cards -->
     <div id="ccodOverallCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;">
       <div class="card" style="padding:16px 18px;text-align:center;">
@@ -3333,13 +3359,6 @@ window.driveRenderTabs = driveRenderTabs;
             <input type="number" class="form-input" id="ec_cf" step="0.01" oninput="recalcEditCompleted()">
           </div>
         </div>
-        <div class="form-grid form-grid-2">
-          <div class="form-group">
-            <label class="form-label">Partners Paid (₹) <span style="color:var(--text-mid);font-weight:400;">(actual amount paid out)</span></label>
-            <input type="number" class="form-input" id="ec_partnersPaid" min="0" step="0.01" oninput="recalcEditCompleted()">
-            <div class="form-help">Deducted from Net Profit to get On Hand Profit</div>
-          </div>
-        </div>
         <div class="divider"></div>
         <div class="calc-box" id="editCompletedCalc"></div>
       </div>
@@ -3791,7 +3810,6 @@ function setChannel(channel) {
   renderAwaiting();
   renderCompleted();
   if (document.getElementById('mpYear')?.value) renderMonthProfit();
-  populateMailCompanies();
   populateWhatsAppRecordSelect();
   updateBadges();
   // Re-render partner fixed lists for new channel
@@ -3817,6 +3835,16 @@ function formatCurrency(num) {
 function parseNumber(val) {
   const num = parseFloat(val);
   return isNaN(num) ? 0 : num;
+}
+
+// On Hand Profit — automatic, no manual per-bill entry needed:
+//   Net Profit already has GST accounted for, so we just deduct 45% of it.
+// Result = Net Profit × 0.55
+function computeOnHandProfit(netProfit) {
+  const np = parseNumber(netProfit);
+  const deduction = np * 0.45;
+  const onHand = np - deduction;
+  return { netProfit: np, deduction, onHand };
 }
 
 // Escape HTML to prevent XSS
@@ -4756,8 +4784,7 @@ function confirmReceivePayment() {
     expensesAmount: expenses,
     carryForwardAmount: carryForward,
     netProfit,
-    partnersPaidAmount: 0,
-    onHandProfit: netProfit,
+    onHandProfit: computeOnHandProfit(netProfit).onHand,
     partnerDistribution: partnerDist,
     completedAt: getCurrentDateTime()
   };
@@ -4961,7 +4988,7 @@ function renderCompleted() {
   const statReceived = filtered.reduce((s, c) => s + parseNumber(c.receivedAmount), 0);
   const statVendor   = filtered.reduce((s, c) => s + parseNumber(c.vendorAmount), 0);
   const statProfit   = filtered.reduce((s, c) => s + parseNumber(c.netProfit), 0);
-  const statOnHand   = filtered.reduce((s, c) => s + (c.onHandProfit !== undefined ? parseNumber(c.onHandProfit) : parseNumber(c.netProfit) - parseNumber(c.partnersPaidAmount)), 0);
+  const statOnHand   = filtered.reduce((s, c) => s + (c.onHandProfit !== undefined ? parseNumber(c.onHandProfit) : computeOnHandProfit(c.netProfit).onHand), 0);
 
   document.getElementById('statCompletedCount').textContent = statCount;
   document.getElementById('statCompletedCountLabel').textContent = isFiltered ? 'Filtered Bills' : 'Total Bills';
@@ -5030,7 +5057,7 @@ function renderCompleted() {
       <td class="mono">₹${formatCurrency(record.amount)}</td>
       <td class="text-center" style="color:var(--info);font-weight:700;">${record.duties || '—'}</td>
       <td class="mono text-success">₹${formatCurrency(record.receivedAmount)}</td>
-      <td class="mono text-rust">₹${formatCurrency(record.netProfit)}<br><span style="font-size:10.5px;color:var(--warning);font-weight:600;">On Hand: ₹${formatCurrency(record.onHandProfit !== undefined ? record.onHandProfit : (parseNumber(record.netProfit) - parseNumber(record.partnersPaidAmount)))}</span></td>
+      <td class="mono text-rust">₹${formatCurrency(record.netProfit)}<br><span style="font-size:10.5px;color:var(--warning);font-weight:600;">On Hand: ₹${formatCurrency(record.onHandProfit !== undefined ? record.onHandProfit : computeOnHandProfit(record.netProfit).onHand)}</span></td>
       <td class="text-dim" style="font-size: 12px;">${record.completedAt}</td>
       <td>
         <div style="display: flex; gap: 8px;">
@@ -5110,17 +5137,14 @@ function showCompletedDetail(index) {
         <span class="calc-value highlight" style="font-size: 18px;">₹${formatCurrency(record.netProfit)}</span>
       </div>
       <div class="calc-row">
-        <span class="calc-label">Partners Paid</span>
-        <span class="calc-value negative">- ₹${formatCurrency(record.partnersPaidAmount || 0)}</span>
+        <span class="calc-label">Distribution (45% of Net Profit) <span style="font-size:11px;color:var(--text-mid);">[auto]</span></span>
+        <span class="calc-value negative">- ₹${formatCurrency(computeOnHandProfit(record.netProfit).deduction)}</span>
       </div>
       <div class="divider"></div>
       <div class="calc-row">
         <span class="calc-label" style="font-weight: 700; color: var(--paper);">ON HAND PROFIT</span>
-        <span class="calc-value ${(record.onHandProfit !== undefined ? record.onHandProfit : record.netProfit - (record.partnersPaidAmount||0)) >= 0 ? 'positive' : 'negative'}" style="font-size: 18px;font-weight:800;">₹${formatCurrency(record.onHandProfit !== undefined ? record.onHandProfit : (record.netProfit - (record.partnersPaidAmount||0)))}</span>
+        <span class="calc-value positive" style="font-size: 18px;font-weight:800;">₹${formatCurrency(computeOnHandProfit(record.netProfit).onHand)}</span>
       </div>
-    </div>
-    <div style="text-align:center;margin-bottom:12px;">
-      <button class="btn btn-sm btn-secondary" style="border-color:var(--warning);color:var(--warning);" onclick="closeModal('completedDetailModal'); openEditCompleted(${index})">✏️ Add / Edit Partners Paid</button>
     </div>
 
     ${record.partnerDistribution && record.partnerDistribution.length > 0 ? `
@@ -5262,7 +5286,6 @@ function openEditCompleted(index) {
   document.getElementById('ec_vendor').value = record.vendorAmount || 0;
   document.getElementById('ec_expenses').value = record.expensesAmount || 0;
   document.getElementById('ec_cf').value = record.carryForwardAmount || 0;
-  document.getElementById('ec_partnersPaid').value = record.partnersPaidAmount || 0;
 
   updateEditChannelBadge();
   recalcEditCompleted();
@@ -5350,12 +5373,11 @@ function recalcEditCompleted() {
   const expenses     = parseNumber(document.getElementById('ec_expenses')?.value);
   const carryForward = parseNumber(document.getElementById('ec_cf')?.value);
   const billingAmt   = parseNumber(document.getElementById('ec_amount')?.value);
-  const partnersPaid = parseNumber(document.getElementById('ec_partnersPaid')?.value);
 
   const tdsAmount = (billingAmt * tdsPercent) / 100;
   const gstAmount = (received * gstPct) / 100;
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
-  const onHandProfit = netProfit - partnersPaid;
+  const oh = computeOnHandProfit(netProfit);
 
   const partners    = AppState.partners.filter(p => p.percentage > 0);
   const partnerDist = partners.map(p => ({ name: p.name, percentage: p.percentage, amount: (netProfit * p.percentage) / 100 }));
@@ -5399,13 +5421,13 @@ function recalcEditCompleted() {
       <span class="calc-value highlight" style="font-size:18px;">₹${formatCurrency(netProfit)}</span>
     </div>
     <div class="calc-row">
-      <span class="calc-label">Partners Paid</span>
-      <span class="calc-value negative">- ₹${formatCurrency(partnersPaid)}</span>
+      <span class="calc-label">Distribution (45% of Net Profit) <span style="font-size:11px;color:var(--text-mid);">[auto]</span></span>
+      <span class="calc-value negative">- ₹${formatCurrency(oh.deduction)}</span>
     </div>
     <div class="divider"></div>
     <div class="calc-row">
       <span class="calc-label" style="font-weight:700;color:var(--paper);">ON HAND PROFIT</span>
-      <span class="calc-value ${onHandProfit >= 0 ? 'positive' : 'negative'}" style="font-size:18px;font-weight:800;">₹${formatCurrency(onHandProfit)}</span>
+      <span class="calc-value ${oh.onHand >= 0 ? 'positive' : 'negative'}" style="font-size:18px;font-weight:800;">₹${formatCurrency(oh.onHand)}</span>
     </div>
     ${partnerDist.length > 0 ? `
       <div class="divider"></div>
@@ -5438,13 +5460,12 @@ async function saveEditCompleted() {
   const vendor       = parseNumber(document.getElementById('ec_vendor').value);
   const expenses     = parseNumber(document.getElementById('ec_expenses').value);
   const carryForward = parseNumber(document.getElementById('ec_cf').value);
-  const partnersPaid = parseNumber(document.getElementById('ec_partnersPaid').value);
 
   const billingAmount = parseNumber(document.getElementById('ec_amount').value);
   const tdsAmount     = (billingAmount * tdsPercent) / 100;
   const gstAmount     = (received * gstPct) / 100;
   const netProfit     = received - gstAmount - vendor - expenses + carryForward;
-  const onHandProfit  = netProfit - partnersPaid;
+  const onHandProfit  = computeOnHandProfit(netProfit).onHand;
 
   const partners = AppState.partners.filter(p => p.percentage > 0);
   const partnerDist = partners.map(p => ({
@@ -5491,7 +5512,6 @@ async function saveEditCompleted() {
     expensesAmount: expenses,
     carryForwardAmount: carryForward,
     netProfit,
-    partnersPaidAmount: partnersPaid,
     onHandProfit,
     partnerDistribution: partnerDist,
     editedAt: getCurrentDateTime()
@@ -5515,32 +5535,7 @@ window.saveEditCompleted = saveEditCompleted;
 // ============================================================================
 // EMAIL GENERATOR
 // ============================================================================
-function populateMailCompanies() {
-  const select = document.getElementById('mailCompany');
-  const companies = [...new Set([
-    ...filterByChannel(AppState.bills).map(b => b.company),
-    ...filterByChannel(AppState.awaiting).map(b => b.company),
-    ...filterByChannel(AppState.completed).map(c => c.company)
-  ])].sort();
-  
-  select.innerHTML = '<option value="">Select Company</option>' +
-    companies.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('') +
-    '<option value="__custom__">Custom Company Name</option>';
-}
-
 function buildEmail() {
-  const companySelect = document.getElementById('mailCompany').value;
-  const customCompanyGroup = document.getElementById('customCompanyGroup');
-  
-  let company;
-  if (companySelect === '__custom__') {
-    customCompanyGroup.style.display = 'block';
-    company = document.getElementById('mailCompanyCustom').value.trim() || 'COMPANY NAME';
-  } else {
-    customCompanyGroup.style.display = 'none';
-    company = companySelect || 'COMPANY NAME';
-  }
-  
   const month = document.getElementById('mailMonth').value;
   const year = new Date().getFullYear();
   const duties = document.getElementById('mailDuties').value || 'XX';
@@ -5549,7 +5544,7 @@ function buildEmail() {
   const to = document.getElementById('mailTo').value.trim();
   const cc = document.getElementById('mailCC').value.trim();
   
-  const subject = `Payment Confirmation and Invoice Details - ${company} ${month} ${year}`;
+  const subject = `Payment Confirmation and Invoice Details - ${month} ${year}`;
   const body = `Dear Team,
 
 I hope this message finds you well.
@@ -5696,7 +5691,6 @@ async function loadData() {
     renderBills();
     renderAwaiting();
     renderCompleted();
-    populateMailCompanies();
     updateBadges();
     updateSyncStatus('synced');
     
@@ -5843,15 +5837,16 @@ function updateBellBadge() {
   }
 }
 
-// Rings the bell + shows a popup. Call this once after the portal's data
-// has loaded (see init()).
+// Shows the bell-icon flash + toast summary. Only called from the daily
+// popup system below (maybeAutoShowDailyBillReminder / the hourly snooze
+// recheck) so it only ever fires once per day per device, or after a
+// specific "Remind Me Later" snooze elapses on THAT device — never on every
+// portal open, and never on someone else's phone.
 function ringBellNotification() {
-  const count = getTotalAwaitingCount();
-  if (count === 0) return;
+  const visible = getVisibleReminderBills();
+  if (visible.length === 0) return;
 
-  const totalAmount = (AppState.awaiting || []).reduce((sum, b) => sum + parseNumber(b.amount), 0);
-
-  playBellSound(8);
+  const totalAmount = visible.reduce((sum, { bill }) => sum + parseNumber(bill.amount), 0);
 
   const bellIcon = document.getElementById('bellIcon');
   if (bellIcon) {
@@ -5859,7 +5854,7 @@ function ringBellNotification() {
     setTimeout(() => bellIcon.classList.remove('bell-ringing'), 8000);
   }
 
-  showToast(`🔔 ${count} payment${count > 1 ? 's' : ''} awaiting — ₹${formatCurrency(totalAmount)} expected`, 'warning');
+  showToast(`🔔 ${visible.length} payment${visible.length > 1 ? 's' : ''} awaiting — ₹${formatCurrency(totalAmount)} expected`, 'warning');
 }
 
 window.updateBellBadge = updateBellBadge;
@@ -6031,8 +6026,10 @@ function openBillReminderPopup(manualOpen) {
   renderBillReminderList();
   overlay.classList.add('open');
   if (!manualOpen) {
-    // Auto-popup on first login of the day: play the existing bell tone once.
+    // Auto-popup on first login of the day (or after a snooze elapses, on
+    // THIS device only): play the bell tone + flash the bell icon + toast.
     playBellSound(6);
+    ringBellNotification();
   }
 }
 
@@ -6345,12 +6342,15 @@ function renderMonthProfit() {
   // Aggregate stats
   const totalBilling  = records.reduce((s, r) => s + parseNumber(r.amount), 0);
   const totalReceived = records.reduce((s, r) => s + parseNumber(r.receivedAmount), 0);
+  const totalVendor   = records.reduce((s, r) => s + parseNumber(r.vendorAmount), 0);
   const totalProfit   = records.reduce((s, r) => s + parseNumber(r.netProfit), 0);
-  const totalOnHand   = records.reduce((s, r) => s + (r.onHandProfit !== undefined ? parseNumber(r.onHandProfit) : parseNumber(r.netProfit) - parseNumber(r.partnersPaidAmount)), 0);
+  const totalOnHand   = records.reduce((s, r) => s + (r.onHandProfit !== undefined ? parseNumber(r.onHandProfit) : computeOnHandProfit(r.netProfit).onHand), 0);
 
   document.getElementById('mpStatBills').textContent    = records.length;
   document.getElementById('mpStatBilling').textContent  = `₹${formatCurrency(totalBilling)}`;
   document.getElementById('mpStatReceived').textContent = `₹${formatCurrency(totalReceived)}`;
+  const mpStatVendor = document.getElementById('mpStatVendor');
+  if (mpStatVendor) mpStatVendor.textContent = `₹${formatCurrency(totalVendor)}`;
   document.getElementById('mpStatProfit').textContent   = `₹${formatCurrency(totalProfit)}`;
   const onHandEl = document.getElementById('mpStatOnHand');
   if (onHandEl) { onHandEl.textContent = `₹${formatCurrency(totalOnHand)}`; onHandEl.dataset.raw = totalOnHand; }
@@ -6442,7 +6442,7 @@ function renderMonthProfit() {
 }
 
 // Pulls the live month-wise CC/OD interest total (from the CC/OD module, if loaded)
-// and works out the Final Cash On Hand = On Hand Profit − CC/OD Interest for that month.
+// and works out the Original Profit = On Hand Profit − CC/OD Interest for that month.
 async function updateMonthProfitCCOD(month, year, onHandProfit) {
   const ccodEl  = document.getElementById('mpStatCCOD');
   const finalEl = document.getElementById('mpStatFinal');
@@ -6460,9 +6460,9 @@ async function updateMonthProfitCCOD(month, year, onHandProfit) {
   try {
     const interest = await window.ccodMonthlyInterestTotal(month, year);
     ccodEl.textContent = `₹${formatCurrency(interest)}`;
-    const finalCash = onHandProfit - interest;
-    finalEl.textContent = `₹${formatCurrency(finalCash)}`;
-    finalEl.style.color = finalCash >= 0 ? 'var(--success)' : 'var(--error)';
+    const originalProfit = onHandProfit - interest;
+    finalEl.textContent = `₹${formatCurrency(originalProfit)}`;
+    finalEl.style.color = originalProfit >= 0 ? 'var(--success)' : 'var(--error)';
   } catch (err) {
     ccodEl.textContent = '—';
     finalEl.textContent = '—';
@@ -6600,12 +6600,18 @@ window.downloadMonthCSV   = downloadMonthCSV;
 async function init() {
   console.log('🚀 Initializing Rajvi Portal...');
   
-  // Set current month in forms
-  const currentMonth = new Date().toLocaleString('en-IN', { month: 'long' });
+  // Set current month in forms — using a fixed lookup (not toLocaleString)
+  // so it always matches the <option> text exactly, regardless of browser/
+  // locale quirks that were sometimes causing the select to silently fall
+  // back to its first option instead of the real current month.
+  const MONTH_NAMES_FULL = ["January","February","March","April","May","June",
+                             "July","August","September","October","November","December"];
+  const currentMonth = MONTH_NAMES_FULL[new Date().getMonth()];
   document.getElementById('billMonth').value = currentMonth;
   document.getElementById('mailMonth').value = currentMonth;
   const mpMonthEl = document.getElementById('mpMonth');
   if (mpMonthEl) mpMonthEl.value = currentMonth;
+  buildEmail();
 
   // Populate month profit years
   populateMonthProfitYears();
@@ -6613,10 +6619,11 @@ async function init() {
   // Load data
   await loadData();
 
-  // Ring the awaiting-payments bell now that AppState.awaiting is populated
-  ringBellNotification();
-
-  // Start the daily bill follow-up reminder popup system
+  // Start the daily bill follow-up reminder popup system — this is what now
+  // rings the bell (tone + toast), and only does so once per calendar day
+  // per device, or after a specific "Remind Me Later" snooze elapses on
+  // THAT SAME device. It never rings again on other phones just because
+  // one person snoozed or muted it on theirs.
   initBillReminderSystem();
   
   // Populate WhatsApp record selector
@@ -8065,6 +8072,166 @@ window.switchTab = function(name) {
 };
 
 console.log("✅ CC/OD Interest & Payout module loaded");
+</script>
+
+<!-- ============================================================================
+     CC/OD QUICK CALCULATOR — plain, self-contained sandbox (no Firebase)
+     Same day-weighted interest logic: whenever the balance changes on a date,
+     the amount held up to and INCLUDING that date is charged interest for
+     that many days, then the new balance takes over from the next day.
+     ============================================================================ -->
+<script>
+let ccodCalcAdjustments = []; // [{ id, date, amount, mode: 'reduce'|'increase' }]
+let ccodCalcAdjSeq = 1;
+
+function ccodCalcTodayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+
+function ccodCalcFmt(n) {
+  const v = Number(n) || 0;
+  return "₹\u202f" + Math.round(v).toLocaleString("en-IN");
+}
+
+function ccodCalcDateLabel(d) {
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+}
+
+window.ccodCalcAddAdjustment = function() {
+  ccodCalcAdjustments.push({ id: ccodCalcAdjSeq++, date: ccodCalcTodayISO(), amount: 0, mode: "reduce" });
+  ccodCalcRenderAdjRows();
+  ccodCalcRun();
+};
+
+window.ccodCalcRemoveAdjustment = function(id) {
+  ccodCalcAdjustments = ccodCalcAdjustments.filter(a => a.id !== id);
+  ccodCalcRenderAdjRows();
+  ccodCalcRun();
+};
+
+window.ccodCalcUpdateAdjustment = function(id, field, value) {
+  const adj = ccodCalcAdjustments.find(a => a.id === id);
+  if (!adj) return;
+  adj[field] = field === "amount" ? (Number(value) || 0) : value;
+  ccodCalcRun();
+};
+
+function ccodCalcRenderAdjRows() {
+  const wrap = document.getElementById("ccodCalcAdjRows");
+  if (!wrap) return;
+
+  if (ccodCalcAdjustments.length === 0) {
+    wrap.innerHTML = `<div style="font-size:12px;color:var(--text-dim);">No adjustments added — result below is just the flat loan amount over the period.</div>`;
+    return;
+  }
+
+  wrap.innerHTML = ccodCalcAdjustments.map(adj => `
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--graphite);border-radius:var(--radius);padding:8px 10px;">
+      <input type="date" class="form-input" style="margin:0;flex:1;min-width:130px;" value="${adj.date}" onchange="ccodCalcUpdateAdjustment(${adj.id},'date',this.value)">
+      <input type="number" class="form-input" style="margin:0;flex:1;min-width:110px;" placeholder="Amount ₹" value="${adj.amount || ""}" oninput="ccodCalcUpdateAdjustment(${adj.id},'amount',this.value)">
+      <select class="form-input" style="margin:0;min-width:170px;" onchange="ccodCalcUpdateAdjustment(${adj.id},'mode',this.value)">
+        <option value="reduce" ${adj.mode === "reduce" ? "selected" : ""}>➖ Repayment (reduces balance)</option>
+        <option value="increase" ${adj.mode === "increase" ? "selected" : ""}>➕ Extra Draw (increases balance)</option>
+      </select>
+      <button type="button" class="ccod-icon-btn" style="color:var(--error);border-color:var(--error);" onclick="ccodCalcRemoveAdjustment(${adj.id})">✕</button>
+    </div>
+  `).join("");
+}
+
+window.ccodCalcRun = function() {
+  const resultEl = document.getElementById("ccodCalcResult");
+  if (!resultEl) return;
+
+  const loanAmount = Number(document.getElementById("ccodCalcLoan").value) || 0;
+  const rate       = Number(document.getElementById("ccodCalcRate").value) || 0;
+  const startVal   = document.getElementById("ccodCalcStart").value;
+  const asOfVal    = document.getElementById("ccodCalcAsOf").value;
+
+  if (!startVal || loanAmount <= 0) {
+    resultEl.innerHTML = `<div style="text-align:center;color:var(--text-dim);font-size:12.5px;padding:16px;">Enter a loan amount and start date to see the interest workout.</div>`;
+    return;
+  }
+
+  const start = new Date(startVal);
+  const end   = asOfVal ? new Date(asOfVal) : new Date();
+
+  if (end < start) {
+    resultEl.innerHTML = `<div style="text-align:center;color:var(--error);font-size:12.5px;padding:16px;">"Calculate As Of" date can't be before the start date.</div>`;
+    return;
+  }
+
+  let balance = loanAmount;
+  let cursor  = new Date(start);
+  const segments = [];
+  let total = 0;
+
+  const inRange = ccodCalcAdjustments
+    .filter(a => a.date && new Date(a.date) >= start && new Date(a.date) <= end)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  for (const adj of inRange) {
+    const d = new Date(adj.date);
+    const days = Math.round((d - cursor) / 86400000) + 1;
+    if (days > 0) {
+      const interest = balance * (rate / 100 / 365) * days;
+      segments.push({ from: new Date(cursor), to: d, days, balance, interest });
+      total += interest;
+    }
+    balance += (adj.mode === "increase" ? (Number(adj.amount) || 0) : -(Number(adj.amount) || 0));
+    cursor = new Date(d.getTime() + 86400000);
+  }
+
+  if (cursor <= end) {
+    const days = Math.round((end - cursor) / 86400000) + 1;
+    const interest = balance * (rate / 100 / 365) * days;
+    segments.push({ from: new Date(cursor), to: end, days, balance, interest });
+    total += interest;
+  }
+
+  const rows = segments.map(s => `
+    <tr>
+      <td>${ccodCalcDateLabel(s.from)}</td>
+      <td>${ccodCalcDateLabel(s.to)}</td>
+      <td style="text-align:center;">${s.days}</td>
+      <td>${ccodCalcFmt(s.balance)}</td>
+      <td style="color:var(--warning);font-weight:700;">${ccodCalcFmt(s.interest)}</td>
+    </tr>`).join("");
+
+  resultEl.innerHTML = `
+    <div style="overflow-x:auto;">
+      <table class="ccod-txn-table">
+        <thead><tr><th>From</th><th>To</th><th style="text-align:center;">Days</th><th>Balance Held</th><th>Interest</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:12px;flex-wrap:wrap;">
+      <div class="ccod-stat" style="flex:1;min-width:140px;">
+        <div class="ccod-stat-label">Closing Balance</div>
+        <div class="ccod-stat-value">${ccodCalcFmt(balance)}</div>
+      </div>
+      <div class="ccod-stat" style="flex:1;min-width:140px;">
+        <div class="ccod-stat-label">Total Interest</div>
+        <div class="ccod-stat-value" style="color:var(--warning);">${ccodCalcFmt(total)}</div>
+      </div>
+      <div class="ccod-stat" style="flex:1;min-width:140px;">
+        <div class="ccod-stat-label">Total Payable</div>
+        <div class="ccod-stat-value" style="color:var(--rust);">${ccodCalcFmt(balance + total)}</div>
+      </div>
+    </div>
+  `;
+};
+
+// Default the calculator dates so it's usable straight away
+(function() {
+  const startEl = document.getElementById("ccodCalcStart");
+  const asOfEl  = document.getElementById("ccodCalcAsOf");
+  if (startEl) startEl.value = ccodCalcTodayISO();
+  if (asOfEl)  asOfEl.value  = ccodCalcTodayISO();
+  ccodCalcRenderAdjRows();
+})();
+
+console.log("✅ CC/OD Quick Calculator loaded");
 </script>
 
 </body>
