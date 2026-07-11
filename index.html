@@ -1832,6 +1832,9 @@ tbody td {
   <button class="nav-tab" data-section="hotelMIS" onclick="switchTab('hotelMIS')">
     🏨 Hotel MIS
   </button>
+  <button class="nav-tab" data-section="ccodReport" onclick="switchTab('ccodReport')">
+    💳 CC/OD Report
+  </button>
 </div>
 
 <!-- CHANNEL BANNER -->
@@ -2193,6 +2196,10 @@ tbody td {
         <div class="stat-value" style="color:var(--success);" id="statTotalProfit">&#x20B9;0</div>
         <div class="stat-label">Net Profit</div>
       </div>
+      <div class="stat-card" style="border-color:rgba(244,162,97,0.4);">
+        <div class="stat-value" style="color:var(--warning);" id="statTotalOnHand">&#x20B9;0</div>
+        <div class="stat-label">On Hand Profit</div>
+      </div>
     </div>
 
     <!-- Filter Row -->
@@ -2310,6 +2317,18 @@ tbody td {
       <div class="stat-card" style="border-color:rgba(39,174,96,0.4);">
         <div class="stat-value" style="color:var(--success);" id="mpStatProfit">₹0</div>
         <div class="stat-label">Net Profit</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(244,162,97,0.4);">
+        <div class="stat-value" style="color:var(--warning);" id="mpStatOnHand" data-raw="0">₹0</div>
+        <div class="stat-label">On Hand Profit</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(197,75,44,0.4);">
+        <div class="stat-value" style="color:var(--rust);" id="mpStatCCOD">—</div>
+        <div class="stat-label">CC/OD Interest (This Month)</div>
+      </div>
+      <div class="stat-card" style="border-color:rgba(255,255,255,0.15);">
+        <div class="stat-value" id="mpStatFinal">—</div>
+        <div class="stat-label">Final Cash On Hand</div>
       </div>
     </div>
 
@@ -2843,6 +2862,54 @@ tbody td {
     </div>
   </section>
 
+  <!-- ═══════════════════════════════════════════════════════════════════
+       CC/OD INTEREST & PAYOUT REPORT SECTION
+  ═══════════════════════════════════════════════════════════════════ -->
+  <section class="section" id="ccodReport">
+    <div class="section-header">
+      <div class="section-title-wrap">
+        <h1 class="section-title">CC/OD <span class="highlight">Interest & Payout</span></h1>
+        <p class="section-subtitle">Cash Credit / Overdraft limits — drawdowns, repayments & interest workout</p>
+      </div>
+      <button class="btn btn-primary" onclick="ccodOpenAccountModal()">＋ Add Account</button>
+    </div>
+
+    <!-- Overall Summary Cards -->
+    <div id="ccodOverallCards" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:18px;">
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Sanctioned Limit</div>
+        <div id="ccodTotalLimit" style="font-size:22px;font-weight:800;color:var(--paper);">—</div>
+      </div>
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Utilized</div>
+        <div id="ccodTotalUsed" style="font-size:22px;font-weight:800;color:var(--rust);">—</div>
+      </div>
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Total Available</div>
+        <div id="ccodTotalAvail" style="font-size:22px;font-weight:800;color:var(--success);">—</div>
+      </div>
+      <div class="card" style="padding:16px 18px;text-align:center;">
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Interest Accrued (Live)</div>
+        <div id="ccodTotalInterest" style="font-size:22px;font-weight:800;color:var(--warning);">—</div>
+      </div>
+    </div>
+
+    <!-- Accounts List (rendered dynamically) -->
+    <div id="ccodAccountsList" style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card" style="text-align:center;padding:40px;color:var(--text-dim);">Loading CC/OD accounts…</div>
+    </div>
+
+    <!-- WhatsApp Summary Send -->
+    <div class="card" style="margin-top:16px;padding:18px 20px;">
+      <div style="font-size:13px;font-weight:700;color:var(--paper);margin-bottom:4px;">📤 Send CC/OD Summary on WhatsApp</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Sends a live snapshot of every account — limit, utilized, available & interest accrued till today.</div>
+      <button class="btn btn-primary" style="background:linear-gradient(135deg,#25D366,#128C7E);" onclick="ccodSendWhatsApp()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="white" style="margin-right:6px;vertical-align:middle;"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+        Send CC/OD Summary
+      </button>
+    </div>
+  </section>
+
 </div><!-- end .main -->
 
 <!-- DRIVE STYLES & LOGIC -->
@@ -3266,6 +3333,13 @@ window.driveRenderTabs = driveRenderTabs;
             <input type="number" class="form-input" id="ec_cf" step="0.01" oninput="recalcEditCompleted()">
           </div>
         </div>
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Partners Paid (₹) <span style="color:var(--text-mid);font-weight:400;">(actual amount paid out)</span></label>
+            <input type="number" class="form-input" id="ec_partnersPaid" min="0" step="0.01" oninput="recalcEditCompleted()">
+            <div class="form-help">Deducted from Net Profit to get On Hand Profit</div>
+          </div>
+        </div>
         <div class="divider"></div>
         <div class="calc-box" id="editCompletedCalc"></div>
       </div>
@@ -3396,6 +3470,125 @@ window.driveRenderTabs = driveRenderTabs;
   .mis-edit-btn { background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:13px;cursor:pointer;padding:3px 9px;transition:var(--transition); }
   .mis-edit-btn:hover { border-color:var(--rust);color:var(--rust); }
   #misEntryModal.open { display:flex !important; }
+</style>
+
+<!-- CC/OD ACCOUNT MODAL -->
+<div class="modal-overlay" id="ccodAccountModal">
+  <div class="modal" style="max-width:520px;">
+    <div class="modal-header">
+      <div class="modal-title">💳 <span id="ccodAccountModalTitle">Add CC/OD Account</span></div>
+      <button onclick="ccodCloseAccountModal()" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ccodAccId">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Lender / Bank Name</label>
+          <input type="text" class="form-input" id="ccodAccName" placeholder="e.g. TATA Capital, ICICI Bank" style="margin:0;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sanctioned Limit (₹)</label>
+          <input type="number" class="form-input" id="ccodAccLimit" min="0" placeholder="0" style="margin:0;">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Default Interest Rate (% yearly)</label>
+          <input type="number" step="0.01" class="form-input" id="ccodAccRate" min="0" placeholder="18.5" style="margin:0;">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Tenure / Note <span style="font-size:10px;font-weight:400;color:var(--text-dim);">e.g. "36 months / ₹55,556 per month"</span></label>
+          <input type="text" class="form-input" id="ccodAccNote" placeholder="Facility tenure or repayment note" style="margin:0;">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="ccodCloseAccountModal()">Cancel</button>
+      <button class="btn btn-ghost" id="ccodAccDeleteBtn" style="display:none;color:var(--error);border-color:var(--error);" onclick="ccodDeleteAccount()">🗑️ Delete Account</button>
+      <button class="btn btn-primary" onclick="ccodSaveAccount()">💾 Save Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- CC/OD TRANSACTION MODAL -->
+<div class="modal-overlay" id="ccodTxnModal">
+  <div class="modal" style="max-width:560px;">
+    <div class="modal-header">
+      <div class="modal-title">💸 <span id="ccodTxnModalTitle">Add Transaction</span></div>
+      <button onclick="ccodCloseTxnModal()" style="background:none;border:none;color:var(--text-dim);font-size:22px;cursor:pointer;line-height:1;">×</button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="ccodTxnAccId">
+      <input type="hidden" id="ccodTxnId">
+      <div id="ccodTxnAccName" style="font-size:12px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.05em;margin-bottom:14px;"></div>
+      <div style="display:flex;gap:8px;margin-bottom:14px;">
+        <button type="button" class="btn" id="ccodTypeDebitBtn" onclick="ccodSetTxnType('debit')" style="flex:1;border:1.5px solid var(--rust);background:var(--rust);color:#fff;">⬇️ Debit (Draw)</button>
+        <button type="button" class="btn" id="ccodTypeCreditBtn" onclick="ccodSetTxnType('credit')" style="flex:1;border:1.5px solid var(--border);background:transparent;color:var(--text-dim);">⬆️ Credit (Repay)</button>
+      </div>
+      <input type="hidden" id="ccodTxnType" value="debit">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group">
+          <label class="form-label">Amount (₹)</label>
+          <input type="number" class="form-input" id="ccodTxnAmount" min="0" placeholder="0" style="margin:0;" oninput="ccodRecalcTxnPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interest Rate (% yearly)</label>
+          <input type="number" step="0.01" class="form-input" id="ccodTxnRate" min="0" placeholder="18.5" style="margin:0;" oninput="ccodRecalcTxnPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Disbursed / Drawn</label>
+          <input type="date" class="form-input" id="ccodTxnDateDisb" style="margin:0;" onchange="ccodRecalcTxnPreview()">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Closed <span style="font-size:10px;font-weight:400;color:var(--text-dim);">leave blank if still running</span></label>
+          <input type="date" class="form-input" id="ccodTxnDateClosed" style="margin:0;" onchange="ccodRecalcTxnPreview()">
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Purpose</label>
+          <input type="text" class="form-input" id="ccodTxnPurpose" placeholder="e.g. Vendor payment, CC account active regards" style="margin:0;">
+        </div>
+      </div>
+      <!-- Live preview -->
+      <div id="ccodTxnPreview" style="margin-top:14px;background:var(--graphite);border-radius:var(--radius);padding:12px 16px;font-size:13px;display:flex;gap:20px;flex-wrap:wrap;">
+        <span>Per Day%: <strong id="ccodPreviewPerDay" style="color:var(--paper);">0.0000%</strong></span>
+        <span>Days: <strong id="ccodPreviewDays" style="color:var(--paper);">0</strong></span>
+        <span>Interest: <strong id="ccodPreviewInterest" style="color:var(--warning);">₹0</strong></span>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="ccodCloseTxnModal()">Cancel</button>
+      <button class="btn btn-ghost" id="ccodTxnDeleteBtn" style="display:none;color:var(--error);border-color:var(--error);" onclick="ccodDeleteTxn()">🗑️ Delete</button>
+      <button class="btn btn-primary" onclick="ccodSaveTxn()">💾 Save Transaction</button>
+    </div>
+  </div>
+</div>
+
+<!-- CC/OD STYLES -->
+<style>
+  .ccod-acc-card { background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;transition:var(--transition); }
+  .ccod-acc-card-head { display:flex;align-items:flex-start;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:14px; }
+  .ccod-acc-name { font-family:'Fraunces',serif;font-size:17px;font-weight:700;color:var(--paper); }
+  .ccod-acc-note { font-size:12px;color:var(--text-dim);margin-top:2px; }
+  .ccod-acc-badge { display:inline-block;font-size:11px;font-weight:700;color:var(--rust);background:var(--rust-light);border-radius:6px;padding:3px 9px;margin-left:8px;letter-spacing:.03em; }
+  .ccod-acc-actions { display:flex;gap:8px; }
+  .ccod-icon-btn { background:none;border:1px solid var(--border);border-radius:6px;color:var(--text-dim);font-size:13px;cursor:pointer;padding:5px 10px;transition:var(--transition); }
+  .ccod-icon-btn:hover { border-color:var(--rust);color:var(--rust); }
+  .ccod-stats-row { display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:14px; }
+  .ccod-stat { background:var(--graphite);border-radius:var(--radius);padding:10px 12px; }
+  .ccod-stat-label { font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px; }
+  .ccod-stat-value { font-size:16px;font-weight:800;color:var(--paper); }
+  .ccod-progress-track { height:8px;border-radius:4px;background:var(--graphite);overflow:hidden;margin-bottom:14px; }
+  .ccod-progress-fill { height:100%;border-radius:4px;background:linear-gradient(90deg,var(--rust),var(--rust-dark));transition:width .3s ease; }
+  .ccod-txn-table { width:100%;border-collapse:collapse;font-size:12.5px; }
+  .ccod-txn-table th { padding:9px 8px;text-align:right;font-size:10.5px;font-weight:700;color:var(--rust);text-transform:uppercase;letter-spacing:.04em;border-bottom:2px solid var(--border);white-space:nowrap; }
+  .ccod-txn-table th:first-child, .ccod-txn-table td:first-child { text-align:left; }
+  .ccod-txn-table td { padding:8px;text-align:right;border-bottom:1px solid var(--border);color:var(--paper);white-space:nowrap; }
+  .ccod-txn-table tbody tr:hover { background:var(--hover); }
+  .ccod-txn-add { background:none;border:1px dashed var(--border);border-radius:8px;color:var(--text-dim);font-size:12.5px;font-weight:600;cursor:pointer;padding:9px;width:100%;margin-top:10px;transition:var(--transition); }
+  .ccod-txn-add:hover { border-color:var(--rust);color:var(--rust); }
+  .ccod-pill-debit { color:var(--error);font-weight:700; }
+  .ccod-pill-credit { color:var(--success);font-weight:700; }
+  .ccod-status-running { color:var(--warning);font-size:11px;font-weight:700; }
+  .ccod-status-closed { color:var(--text-dim);font-size:11px; }
+  .ccod-workout-panel { margin-top:18px;padding-top:16px;border-top:1px dashed var(--border); }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -4563,6 +4756,8 @@ function confirmReceivePayment() {
     expensesAmount: expenses,
     carryForwardAmount: carryForward,
     netProfit,
+    partnersPaidAmount: 0,
+    onHandProfit: netProfit,
     partnerDistribution: partnerDist,
     completedAt: getCurrentDateTime()
   };
@@ -4766,6 +4961,7 @@ function renderCompleted() {
   const statReceived = filtered.reduce((s, c) => s + parseNumber(c.receivedAmount), 0);
   const statVendor   = filtered.reduce((s, c) => s + parseNumber(c.vendorAmount), 0);
   const statProfit   = filtered.reduce((s, c) => s + parseNumber(c.netProfit), 0);
+  const statOnHand   = filtered.reduce((s, c) => s + (c.onHandProfit !== undefined ? parseNumber(c.onHandProfit) : parseNumber(c.netProfit) - parseNumber(c.partnersPaidAmount)), 0);
 
   document.getElementById('statCompletedCount').textContent = statCount;
   document.getElementById('statCompletedCountLabel').textContent = isFiltered ? 'Filtered Bills' : 'Total Bills';
@@ -4773,6 +4969,8 @@ function renderCompleted() {
   document.getElementById('statTotalReceived').textContent = `₹${formatCurrency(statReceived)}`;
   document.getElementById('statTotalVendor').textContent   = `₹${formatCurrency(statVendor)}`;
   document.getElementById('statTotalProfit').textContent   = `₹${formatCurrency(statProfit)}`;
+  const onHandEl = document.getElementById('statTotalOnHand');
+  if (onHandEl) onHandEl.textContent = `₹${formatCurrency(statOnHand)}`;
 
   // Duties stat
   const statDuties = filtered.reduce((s, c) => s + (parseInt(c.duties) || 0), 0);
@@ -4832,7 +5030,7 @@ function renderCompleted() {
       <td class="mono">₹${formatCurrency(record.amount)}</td>
       <td class="text-center" style="color:var(--info);font-weight:700;">${record.duties || '—'}</td>
       <td class="mono text-success">₹${formatCurrency(record.receivedAmount)}</td>
-      <td class="mono text-rust">₹${formatCurrency(record.netProfit)}</td>
+      <td class="mono text-rust">₹${formatCurrency(record.netProfit)}<br><span style="font-size:10.5px;color:var(--warning);font-weight:600;">On Hand: ₹${formatCurrency(record.onHandProfit !== undefined ? record.onHandProfit : (parseNumber(record.netProfit) - parseNumber(record.partnersPaidAmount)))}</span></td>
       <td class="text-dim" style="font-size: 12px;">${record.completedAt}</td>
       <td>
         <div style="display: flex; gap: 8px;">
@@ -4911,6 +5109,18 @@ function showCompletedDetail(index) {
         <span class="calc-label" style="font-weight: 700; color: var(--paper);">NET PROFIT</span>
         <span class="calc-value highlight" style="font-size: 18px;">₹${formatCurrency(record.netProfit)}</span>
       </div>
+      <div class="calc-row">
+        <span class="calc-label">Partners Paid</span>
+        <span class="calc-value negative">- ₹${formatCurrency(record.partnersPaidAmount || 0)}</span>
+      </div>
+      <div class="divider"></div>
+      <div class="calc-row">
+        <span class="calc-label" style="font-weight: 700; color: var(--paper);">ON HAND PROFIT</span>
+        <span class="calc-value ${(record.onHandProfit !== undefined ? record.onHandProfit : record.netProfit - (record.partnersPaidAmount||0)) >= 0 ? 'positive' : 'negative'}" style="font-size: 18px;font-weight:800;">₹${formatCurrency(record.onHandProfit !== undefined ? record.onHandProfit : (record.netProfit - (record.partnersPaidAmount||0)))}</span>
+      </div>
+    </div>
+    <div style="text-align:center;margin-bottom:12px;">
+      <button class="btn btn-sm btn-secondary" style="border-color:var(--warning);color:var(--warning);" onclick="closeModal('completedDetailModal'); openEditCompleted(${index})">✏️ Add / Edit Partners Paid</button>
     </div>
 
     ${record.partnerDistribution && record.partnerDistribution.length > 0 ? `
@@ -5052,6 +5262,7 @@ function openEditCompleted(index) {
   document.getElementById('ec_vendor').value = record.vendorAmount || 0;
   document.getElementById('ec_expenses').value = record.expensesAmount || 0;
   document.getElementById('ec_cf').value = record.carryForwardAmount || 0;
+  document.getElementById('ec_partnersPaid').value = record.partnersPaidAmount || 0;
 
   updateEditChannelBadge();
   recalcEditCompleted();
@@ -5139,10 +5350,12 @@ function recalcEditCompleted() {
   const expenses     = parseNumber(document.getElementById('ec_expenses')?.value);
   const carryForward = parseNumber(document.getElementById('ec_cf')?.value);
   const billingAmt   = parseNumber(document.getElementById('ec_amount')?.value);
+  const partnersPaid = parseNumber(document.getElementById('ec_partnersPaid')?.value);
 
   const tdsAmount = (billingAmt * tdsPercent) / 100;
   const gstAmount = (received * gstPct) / 100;
   const netProfit = received - gstAmount - vendor - expenses + carryForward;
+  const onHandProfit = netProfit - partnersPaid;
 
   const partners    = AppState.partners.filter(p => p.percentage > 0);
   const partnerDist = partners.map(p => ({ name: p.name, percentage: p.percentage, amount: (netProfit * p.percentage) / 100 }));
@@ -5185,6 +5398,15 @@ function recalcEditCompleted() {
       <span class="calc-label" style="font-weight:700;color:var(--paper);">NET PROFIT</span>
       <span class="calc-value highlight" style="font-size:18px;">₹${formatCurrency(netProfit)}</span>
     </div>
+    <div class="calc-row">
+      <span class="calc-label">Partners Paid</span>
+      <span class="calc-value negative">- ₹${formatCurrency(partnersPaid)}</span>
+    </div>
+    <div class="divider"></div>
+    <div class="calc-row">
+      <span class="calc-label" style="font-weight:700;color:var(--paper);">ON HAND PROFIT</span>
+      <span class="calc-value ${onHandProfit >= 0 ? 'positive' : 'negative'}" style="font-size:18px;font-weight:800;">₹${formatCurrency(onHandProfit)}</span>
+    </div>
     ${partnerDist.length > 0 ? `
       <div class="divider"></div>
       <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;">Partner Distribution</div>
@@ -5216,11 +5438,13 @@ async function saveEditCompleted() {
   const vendor       = parseNumber(document.getElementById('ec_vendor').value);
   const expenses     = parseNumber(document.getElementById('ec_expenses').value);
   const carryForward = parseNumber(document.getElementById('ec_cf').value);
+  const partnersPaid = parseNumber(document.getElementById('ec_partnersPaid').value);
 
   const billingAmount = parseNumber(document.getElementById('ec_amount').value);
   const tdsAmount     = (billingAmount * tdsPercent) / 100;
   const gstAmount     = (received * gstPct) / 100;
   const netProfit     = received - gstAmount - vendor - expenses + carryForward;
+  const onHandProfit  = netProfit - partnersPaid;
 
   const partners = AppState.partners.filter(p => p.percentage > 0);
   const partnerDist = partners.map(p => ({
@@ -5267,6 +5491,8 @@ async function saveEditCompleted() {
     expensesAmount: expenses,
     carryForwardAmount: carryForward,
     netProfit,
+    partnersPaidAmount: partnersPaid,
+    onHandProfit,
     partnerDistribution: partnerDist,
     editedAt: getCurrentDateTime()
   };
@@ -6120,11 +6346,15 @@ function renderMonthProfit() {
   const totalBilling  = records.reduce((s, r) => s + parseNumber(r.amount), 0);
   const totalReceived = records.reduce((s, r) => s + parseNumber(r.receivedAmount), 0);
   const totalProfit   = records.reduce((s, r) => s + parseNumber(r.netProfit), 0);
+  const totalOnHand   = records.reduce((s, r) => s + (r.onHandProfit !== undefined ? parseNumber(r.onHandProfit) : parseNumber(r.netProfit) - parseNumber(r.partnersPaidAmount)), 0);
 
   document.getElementById('mpStatBills').textContent    = records.length;
   document.getElementById('mpStatBilling').textContent  = `₹${formatCurrency(totalBilling)}`;
   document.getElementById('mpStatReceived').textContent = `₹${formatCurrency(totalReceived)}`;
   document.getElementById('mpStatProfit').textContent   = `₹${formatCurrency(totalProfit)}`;
+  const onHandEl = document.getElementById('mpStatOnHand');
+  if (onHandEl) { onHandEl.textContent = `₹${formatCurrency(totalOnHand)}`; onHandEl.dataset.raw = totalOnHand; }
+  updateMonthProfitCCOD(month, year, totalOnHand);
   const totalDuties = records.reduce((s, r) => s + (parseInt(r.duties) || 0), 0);
   const mpStatDuties = document.getElementById('mpStatDuties');
   if (mpStatDuties) mpStatDuties.textContent = totalDuties;
@@ -6210,6 +6440,35 @@ function renderMonthProfit() {
     </tr>`;
   }).join('');
 }
+
+// Pulls the live month-wise CC/OD interest total (from the CC/OD module, if loaded)
+// and works out the Final Cash On Hand = On Hand Profit − CC/OD Interest for that month.
+async function updateMonthProfitCCOD(month, year, onHandProfit) {
+  const ccodEl  = document.getElementById('mpStatCCOD');
+  const finalEl = document.getElementById('mpStatFinal');
+  if (!ccodEl || !finalEl) return;
+
+  if (typeof window.ccodMonthlyInterestTotal !== 'function') {
+    ccodEl.textContent = '—';
+    finalEl.textContent = '—';
+    return;
+  }
+
+  ccodEl.textContent = '…';
+  finalEl.textContent = '…';
+
+  try {
+    const interest = await window.ccodMonthlyInterestTotal(month, year);
+    ccodEl.textContent = `₹${formatCurrency(interest)}`;
+    const finalCash = onHandProfit - interest;
+    finalEl.textContent = `₹${formatCurrency(finalCash)}`;
+    finalEl.style.color = finalCash >= 0 ? 'var(--success)' : 'var(--error)';
+  } catch (err) {
+    ccodEl.textContent = '—';
+    finalEl.textContent = '—';
+  }
+}
+window.updateMonthProfitCCOD = updateMonthProfitCCOD;
 
 let _mpChartInstance = null;
 
@@ -7185,6 +7444,631 @@ window.switchTab = function(name) {
 })();
 
 console.log("✅ Hotel MIS module loaded");
+</script>
+
+<!-- ============================================================================
+     CC/OD INTEREST & PAYOUT REPORT — Firebase Logic (main rajvi-portal project)
+     ============================================================================ -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {
+  getFirestore, collection, doc, getDocs, getDoc, setDoc, addDoc,
+  deleteDoc, serverTimestamp
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+// Reuse the same rajvi-portal Firebase project, but as a distinct named app
+// instance (same pattern as the Hotel MIS module) so it doesn't collide with
+// the primary app() instance initialized earlier on this page.
+const ccodApp = initializeApp({
+  apiKey: "AIzaSyCModhaUB6fLdhALu65ju2N0BPV_3nHKfQ",
+  authDomain: "rajvi-portal.firebaseapp.com",
+  projectId: "rajvi-portal",
+  storageBucket: "rajvi-portal.firebasestorage.app",
+  messagingSenderId: "935033381558",
+  appId: "1:935033381558:web:5e15faa28b78d805aabc17"
+}, "ccodModule");
+
+const ccodDB = getFirestore(ccodApp);
+const CCOD_COL = "ccod_accounts";
+const CCOD_MONTHS = ["January","February","March","April","May","June",
+                     "July","August","September","October","November","December"];
+
+function ccodFmt(n) {
+  const v = Number(n) || 0;
+  return "₹\u202f" + Math.round(v).toLocaleString("en-IN");
+}
+function ccodPerDay(ratePct) { return (Number(ratePct) || 0) / 100 / 365; }
+function ccodDays(d1, d2) { return Math.max(1, Math.round((d2 - d1) / 86400000)); }
+
+// Interest accrues on DEBIT (drawdown) legs only, from date disbursed to
+// date closed (or to today, if still running).
+function ccodTxnInterest(txn) {
+  if (txn.type !== "debit") return 0;
+  const perDay = ccodPerDay(txn.ratePct);
+  const start  = new Date(txn.dateDisb);
+  const end    = txn.dateClosed ? new Date(txn.dateClosed) : new Date();
+  return (Number(txn.amount) || 0) * perDay * ccodDays(start, end);
+}
+
+// In-memory cache: [{ id, name, limit, rate, note, txns:[...] }]
+let ccodData = [];
+let ccodExpanded = {}; // { accountId: true/false }
+let ccodWorkoutSel = {}; // { accountId: { month, year } } — remembers the user's month/year choice per card
+
+function ccodDateLabel2(d) {
+  return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()}`;
+}
+
+// ── Month-wise interest workout ──────────────────────────────────────────────
+// Walks the account's running balance day-by-day-segment through the chosen
+// month: whenever the balance changes (a debit or a credit), the amount held
+// *up to and including* the day it changed is charged interest for that many
+// days, then the new balance takes over from the next day onward.
+// Example: loan ₹x from 1 Jul, ₹y adjustment on 5 Jul → interest on x for
+// 5 days (1–5 Jul inclusive), then interest on (x‑y or x+y) from 6 Jul onward.
+function ccodMonthWorkout(acc, year, monthIdx) {
+  const monthStart = new Date(year, monthIdx, 1);
+  const monthEnd   = new Date(year, monthIdx + 1, 0);
+  const today      = new Date(); today.setHours(0, 0, 0, 0);
+  const monthStartOnly = new Date(monthStart); monthStartOnly.setHours(0, 0, 0, 0);
+  const future = monthStartOnly > today;
+  const effectiveEnd = monthEnd < today ? monthEnd : today;
+
+  const sorted = [...(acc.txns || [])].sort((a, b) => new Date(a.dateDisb) - new Date(b.dateDisb));
+
+  // Fast-forward through everything before this month to get the opening balance & rate
+  let balance = 0;
+  let rate = Number(acc.rate) || 0;
+  for (const txn of sorted) {
+    const d = new Date(txn.dateDisb);
+    if (d < monthStart) {
+      balance += (txn.type === "debit" ? (Number(txn.amount) || 0) : -(Number(txn.amount) || 0));
+      rate = Number(txn.ratePct) || rate;
+    }
+  }
+  const openingBalance = balance;
+
+  const segments = [];
+  let total = 0;
+
+  if (!future) {
+    let cursor = new Date(monthStart);
+    const inMonth = sorted.filter(t => {
+      const d = new Date(t.dateDisb);
+      return d >= monthStart && d <= effectiveEnd;
+    });
+
+    for (const txn of inMonth) {
+      const d = new Date(txn.dateDisb);
+      const days = Math.round((d - cursor) / 86400000) + 1;
+      if (days > 0) {
+        const segInterest = balance * ccodPerDay(rate) * days;
+        segments.push({ from: new Date(cursor), to: d, days, balance, rate, interest: segInterest });
+        total += segInterest;
+      }
+      balance += (txn.type === "debit" ? (Number(txn.amount) || 0) : -(Number(txn.amount) || 0));
+      rate = Number(txn.ratePct) || rate;
+      cursor = new Date(d.getTime() + 86400000);
+    }
+
+    if (cursor <= effectiveEnd) {
+      const days = Math.round((effectiveEnd - cursor) / 86400000) + 1;
+      const segInterest = balance * ccodPerDay(rate) * days;
+      segments.push({ from: new Date(cursor), to: effectiveEnd, days, balance, rate, interest: segInterest });
+      total += segInterest;
+    }
+  }
+
+  return { openingBalance, segments, total, future, closingBalance: balance };
+}
+
+// Renders the monthly workout panel for one account card
+window.ccodRenderWorkout = function(accId) {
+  const acc = ccodData.find(a => a.id === accId);
+  const monthSel = document.getElementById("ccodWkMonth_" + accId);
+  const yearSel  = document.getElementById("ccodWkYear_" + accId);
+  const resultEl = document.getElementById("ccodWkResult_" + accId);
+  if (!acc || !monthSel || !yearSel || !resultEl) return;
+
+  const monthIdx = Number(monthSel.value);
+  const year = Number(yearSel.value);
+  ccodWorkoutSel[accId] = { month: monthIdx, year };
+
+  const wk = ccodMonthWorkout(acc, year, monthIdx);
+
+  const rows = wk.segments.map(s => `
+    <tr>
+      <td>${ccodDateLabel2(s.from)}</td>
+      <td>${ccodDateLabel2(s.to)}</td>
+      <td style="text-align:center;">${s.days}</td>
+      <td>${ccodFmt(s.balance)}</td>
+      <td>${s.rate.toFixed(2)}%</td>
+      <td style="color:var(--warning);font-weight:700;">${ccodFmt(s.interest)}</td>
+    </tr>`).join("");
+
+  resultEl.innerHTML = `
+    <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">Opening Balance for ${CCOD_MONTHS[monthIdx]} ${year}: <strong style="color:var(--paper);">${ccodFmt(wk.openingBalance)}</strong></div>
+    ${wk.future
+      ? `<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:12.5px;">This month is in the future — nothing accrued yet.</div>`
+      : `
+      <div style="overflow-x:auto;">
+        <table class="ccod-txn-table">
+          <thead><tr><th>From</th><th>To</th><th style="text-align:center;">Days</th><th>Balance Held</th><th>Rate</th><th>Interest</th></tr></thead>
+          <tbody>${rows || `<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:14px;">No balance held this month.</td></tr>`}</tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;padding:10px 14px;background:var(--graphite);border-radius:var(--radius);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+        <span style="font-size:12.5px;font-weight:700;color:var(--paper);">Total Interest — ${CCOD_MONTHS[monthIdx]} ${year}</span>
+        <span style="font-size:16px;font-weight:800;color:var(--warning);">${ccodFmt(wk.total)}</span>
+      </div>`}
+  `;
+};
+
+// Exposed for other modules (e.g. Month-wise Profit) to pull the total CC/OD
+// interest payable across ALL accounts for a given month name + year.
+window.ccodMonthlyInterestTotal = async function(monthName, year) {
+  if (!ccodData || ccodData.length === 0) {
+    try { await window.ccodLoadAll(); } catch (e) { /* ignore */ }
+  }
+  const idx = CCOD_MONTHS.indexOf(monthName);
+  if (idx < 0) return 0;
+  let total = 0;
+  for (const acc of ccodData) total += ccodMonthWorkout(acc, Number(year), idx).total;
+  return total;
+};
+
+// ── Load everything ───────────────────────────────────────────────────────
+window.ccodLoadAll = async function() {
+  const listEl = document.getElementById("ccodAccountsList");
+  listEl.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--text-dim);">Loading CC/OD accounts…</div>`;
+
+  try {
+    const accSnap = await getDocs(collection(ccodDB, CCOD_COL));
+    const accounts = [];
+    accSnap.forEach(d => accounts.push({ id: d.id, ...d.data() }));
+    accounts.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+
+    for (const acc of accounts) {
+      const txnSnap = await getDocs(collection(ccodDB, CCOD_COL, acc.id, "transactions"));
+      const txns = [];
+      txnSnap.forEach(d => txns.push({ id: d.id, ...d.data() }));
+      txns.sort((a, b) => new Date(a.dateDisb) - new Date(b.dateDisb));
+      acc.txns = txns;
+    }
+
+    ccodData = accounts;
+    ccodRenderAccounts();
+  } catch (err) {
+    listEl.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--error);">Error loading: ${err.message}</div>`;
+  }
+};
+
+// ── Render account cards + overall summary ─────────────────────────────────
+window.ccodRenderAccounts = function() {
+  const listEl = document.getElementById("ccodAccountsList");
+
+  if (ccodData.length === 0) {
+    listEl.innerHTML = `<div class="card" style="text-align:center;padding:40px;color:var(--text-dim);">
+      No CC/OD accounts yet. Click <strong style="color:var(--rust);">＋ Add Account</strong> to set up your first facility.
+    </div>`;
+    document.getElementById("ccodTotalLimit").textContent    = "—";
+    document.getElementById("ccodTotalUsed").textContent     = "—";
+    document.getElementById("ccodTotalAvail").textContent    = "—";
+    document.getElementById("ccodTotalInterest").textContent = "—";
+    return;
+  }
+
+  let grandLimit = 0, grandUsed = 0, grandInterest = 0;
+  let cardsHtml = "";
+
+  for (const acc of ccodData) {
+    const limit = Number(acc.limit) || 0;
+    let used = 0, interest = 0;
+
+    const txnRows = acc.txns.map(txn => {
+      const amount = Number(txn.amount) || 0;
+      if (txn.type === "debit") used += amount; else used -= amount;
+      const txnInt = ccodTxnInterest(txn);
+      interest += txnInt;
+
+      const perDay   = ccodPerDay(txn.ratePct);
+      const closed   = !!txn.dateClosed;
+      const start    = new Date(txn.dateDisb);
+      const end      = closed ? new Date(txn.dateClosed) : new Date();
+      const days     = ccodDays(start, end);
+      const balAfter = limit - used;
+      const typeLabel = txn.type === "debit"
+        ? '<span class="ccod-pill-debit">⬇ DEBIT</span>'
+        : '<span class="ccod-pill-credit">⬆ CREDIT</span>';
+      const statusLabel = txn.type === "debit"
+        ? (closed ? `<span class="ccod-status-closed">Closed ${ccodDateLabel(txn.dateClosed)}</span>` : `<span class="ccod-status-running">● Running</span>`)
+        : `<span class="ccod-status-closed">—</span>`;
+
+      return `
+        <tr>
+          <td>${ccodDateLabel(txn.dateDisb)}</td>
+          <td style="text-align:center;">${typeLabel}</td>
+          <td>${ccodFmt(amount)}</td>
+          <td>${(Number(txn.ratePct)||0).toFixed(2)}%</td>
+          <td>${(perDay*100).toFixed(4)}%</td>
+          <td>${txn.type === "debit" ? days : "—"}</td>
+          <td style="color:var(--warning);font-weight:700;">${txn.type === "debit" ? ccodFmt(txnInt) : "—"}</td>
+          <td style="font-weight:700;">${ccodFmt(balAfter)}</td>
+          <td style="text-align:left;max-width:180px;white-space:normal;">${ccodEsc(txn.purpose || "—")}</td>
+          <td style="text-align:center;">${statusLabel}</td>
+          <td style="text-align:center;"><button class="ccod-icon-btn" onclick="ccodOpenTxnModal('${acc.id}','${txn.id}')">✏️</button></td>
+        </tr>`;
+    }).join("");
+
+    const available  = limit - used;
+    const usedPct    = limit > 0 ? Math.min(100, Math.max(0, (used / limit) * 100)) : 0;
+    const isExpanded = !!ccodExpanded[acc.id];
+
+    grandLimit    += limit;
+    grandUsed     += used;
+    grandInterest += interest;
+
+    cardsHtml += `
+      <div class="ccod-acc-card">
+        <div class="ccod-acc-card-head">
+          <div>
+            <div class="ccod-acc-name">${ccodEsc(acc.name)}<span class="ccod-acc-badge">${(Number(acc.rate)||0)}% p.a.</span></div>
+            <div class="ccod-acc-note">${ccodEsc(acc.note || "")}</div>
+          </div>
+          <div class="ccod-acc-actions">
+            <button class="ccod-icon-btn" onclick="ccodOpenTxnModal('${acc.id}')">＋ Transaction</button>
+            <button class="ccod-icon-btn" onclick="ccodOpenAccountModal('${acc.id}')">✏️ Edit</button>
+            <button class="ccod-icon-btn" onclick="ccodToggleAccount('${acc.id}')">${isExpanded ? "▲ Hide" : "▾ Details"}</button>
+          </div>
+        </div>
+
+        <div class="ccod-progress-track"><div class="ccod-progress-fill" style="width:${usedPct}%;"></div></div>
+
+        <div class="ccod-stats-row">
+          <div class="ccod-stat"><div class="ccod-stat-label">Limit</div><div class="ccod-stat-value">${ccodFmt(limit)}</div></div>
+          <div class="ccod-stat"><div class="ccod-stat-label">Utilized</div><div class="ccod-stat-value" style="color:var(--rust);">${ccodFmt(used)}</div></div>
+          <div class="ccod-stat"><div class="ccod-stat-label">Available</div><div class="ccod-stat-value" style="color:var(--success);">${ccodFmt(available)}</div></div>
+          <div class="ccod-stat"><div class="ccod-stat-label">Interest Accrued</div><div class="ccod-stat-value" style="color:var(--warning);">${ccodFmt(interest)}</div></div>
+        </div>
+
+        ${isExpanded ? `
+          <div style="overflow-x:auto;">
+            <table class="ccod-txn-table">
+              <thead><tr>
+                <th>Date</th><th style="text-align:center;">Type</th><th>Amount</th><th>Rate</th><th>Per Day%</th>
+                <th>Days</th><th>Interest</th><th>Balance After</th><th style="text-align:left;">Purpose</th><th>Status</th><th></th>
+              </tr></thead>
+              <tbody>${txnRows || `<tr><td colspan="11" style="text-align:center;color:var(--text-dim);padding:20px;">No transactions yet.</td></tr>`}</tbody>
+            </table>
+          </div>
+          <button class="ccod-txn-add" onclick="ccodOpenTxnModal('${acc.id}')">＋ Add Transaction to ${ccodEsc(acc.name)}</button>
+
+          <div class="ccod-workout-panel">
+            <div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px;">📅 Monthly Interest Workout</div>
+            <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:12px;">
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;">Month</label>
+                <select class="form-input" id="ccodWkMonth_${acc.id}" style="margin:0;min-width:130px;" onchange="ccodRenderWorkout('${acc.id}')">
+                  ${CCOD_MONTHS.map((m, i) => `<option value="${i}" ${i === ccodWorkoutMonth(acc.id) ? "selected" : ""}>${m}</option>`).join("")}
+                </select>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:4px;">
+                <label style="font-size:10px;font-weight:700;color:var(--text-dim);text-transform:uppercase;">Year</label>
+                <select class="form-input" id="ccodWkYear_${acc.id}" style="margin:0;min-width:90px;" onchange="ccodRenderWorkout('${acc.id}')">
+                  ${ccodYearOptions(acc.id)}
+                </select>
+              </div>
+            </div>
+            <div id="ccodWkResult_${acc.id}"></div>
+          </div>
+        ` : ""}
+      </div>`;
+  }
+
+  listEl.innerHTML = cardsHtml;
+
+  document.getElementById("ccodTotalLimit").textContent    = ccodFmt(grandLimit);
+  document.getElementById("ccodTotalUsed").textContent     = ccodFmt(grandUsed);
+  document.getElementById("ccodTotalAvail").textContent    = ccodFmt(grandLimit - grandUsed);
+  document.getElementById("ccodTotalInterest").textContent = ccodFmt(grandInterest);
+
+  // Populate the workout result for every expanded account (selects default to
+  // the last month/year the user picked for that card, or the current month).
+  for (const acc of ccodData) {
+    if (ccodExpanded[acc.id]) ccodRenderWorkout(acc.id);
+  }
+};
+
+function ccodWorkoutMonth(accId) {
+  return (ccodWorkoutSel[accId] ? ccodWorkoutSel[accId].month : new Date().getMonth());
+}
+function ccodWorkoutYear(accId) {
+  return (ccodWorkoutSel[accId] ? ccodWorkoutSel[accId].year : new Date().getFullYear());
+}
+function ccodYearOptions(accId) {
+  const selectedYear = ccodWorkoutYear(accId);
+  const nowYear = new Date().getFullYear();
+  let opts = "";
+  for (let y = nowYear - 3; y <= nowYear + 1; y++) {
+    opts += `<option value="${y}" ${y === selectedYear ? "selected" : ""}>${y}</option>`;
+  }
+  return opts;
+}
+
+function ccodDateLabel(dateStr) {
+  if (!dateStr) return "—";
+  const [y, m, d] = dateStr.split("-");
+  return `${d}/${m}/${y}`;
+}
+function ccodEsc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
+}
+
+window.ccodToggleAccount = function(accId) {
+  ccodExpanded[accId] = !ccodExpanded[accId];
+  ccodRenderAccounts();
+};
+
+// ── Account modal (add / edit / delete) ─────────────────────────────────────
+window.ccodOpenAccountModal = function(accId) {
+  const modal = document.getElementById("ccodAccountModal");
+  const title = document.getElementById("ccodAccountModalTitle");
+  const delBtn = document.getElementById("ccodAccDeleteBtn");
+
+  document.getElementById("ccodAccId").value   = accId || "";
+  document.getElementById("ccodAccName").value = "";
+  document.getElementById("ccodAccLimit").value = "";
+  document.getElementById("ccodAccRate").value  = "";
+  document.getElementById("ccodAccNote").value  = "";
+
+  if (accId) {
+    const acc = ccodData.find(a => a.id === accId);
+    if (acc) {
+      title.textContent = "Edit Account";
+      document.getElementById("ccodAccName").value  = acc.name  || "";
+      document.getElementById("ccodAccLimit").value = acc.limit || "";
+      document.getElementById("ccodAccRate").value  = acc.rate  || "";
+      document.getElementById("ccodAccNote").value  = acc.note  || "";
+    }
+    delBtn.style.display = "";
+  } else {
+    title.textContent = "Add CC/OD Account";
+    delBtn.style.display = "none";
+  }
+
+  modal.classList.add("open");
+};
+
+window.ccodCloseAccountModal = function() {
+  document.getElementById("ccodAccountModal").classList.remove("open");
+};
+
+window.ccodSaveAccount = async function() {
+  const accId = document.getElementById("ccodAccId").value;
+  const name  = document.getElementById("ccodAccName").value.trim();
+  const limit = Number(document.getElementById("ccodAccLimit").value) || 0;
+  const rate  = Number(document.getElementById("ccodAccRate").value) || 0;
+  const note  = document.getElementById("ccodAccNote").value.trim();
+
+  if (!name)      { alert("Please enter the lender / bank name."); return; }
+  if (limit <= 0) { alert("Please enter a valid sanctioned limit."); return; }
+
+  const payload = { name, limit, rate, note, updatedAt: new Date().toISOString() };
+
+  try {
+    if (accId) {
+      await setDoc(doc(ccodDB, CCOD_COL, accId), payload, { merge: true });
+    } else {
+      payload.createdAt = new Date().toISOString();
+      await addDoc(collection(ccodDB, CCOD_COL), payload);
+    }
+    ccodCloseAccountModal();
+    ccodLoadAll();
+  } catch (err) {
+    alert("❌ Error saving account: " + err.message);
+  }
+};
+
+window.ccodDeleteAccount = async function() {
+  const accId = document.getElementById("ccodAccId").value;
+  if (!accId) return;
+  const acc = ccodData.find(a => a.id === accId);
+  if (!confirm(`Delete "${acc ? acc.name : "this account"}" and ALL its transactions? This cannot be undone.`)) return;
+
+  try {
+    if (acc && acc.txns) {
+      for (const txn of acc.txns) {
+        await deleteDoc(doc(ccodDB, CCOD_COL, accId, "transactions", txn.id));
+      }
+    }
+    await deleteDoc(doc(ccodDB, CCOD_COL, accId));
+    ccodCloseAccountModal();
+    ccodLoadAll();
+  } catch (err) {
+    alert("❌ Error deleting account: " + err.message);
+  }
+};
+
+// ── Transaction modal (add / edit / delete) ─────────────────────────────────
+window.ccodSetTxnType = function(type) {
+  document.getElementById("ccodTxnType").value = type;
+  const debitBtn  = document.getElementById("ccodTypeDebitBtn");
+  const creditBtn = document.getElementById("ccodTypeCreditBtn");
+  if (type === "debit") {
+    debitBtn.style.background = "var(--rust)";  debitBtn.style.borderColor = "var(--rust)";  debitBtn.style.color = "#fff";
+    creditBtn.style.background = "transparent"; creditBtn.style.borderColor = "var(--border)"; creditBtn.style.color = "var(--text-dim)";
+  } else {
+    creditBtn.style.background = "var(--success)"; creditBtn.style.borderColor = "var(--success)"; creditBtn.style.color = "#fff";
+    debitBtn.style.background = "transparent";  debitBtn.style.borderColor = "var(--border)";  debitBtn.style.color = "var(--text-dim)";
+  }
+  ccodRecalcTxnPreview();
+};
+
+window.ccodOpenTxnModal = function(accId, txnId) {
+  const modal = document.getElementById("ccodTxnModal");
+  const title = document.getElementById("ccodTxnModalTitle");
+  const delBtn = document.getElementById("ccodTxnDeleteBtn");
+  const acc = ccodData.find(a => a.id === accId);
+
+  document.getElementById("ccodTxnAccId").value = accId;
+  document.getElementById("ccodTxnId").value    = txnId || "";
+  document.getElementById("ccodTxnAccName").textContent = acc ? `${acc.name} — ₹${(Number(acc.limit)||0).toLocaleString("en-IN")} limit` : "";
+
+  const today = new Date();
+  const defDate = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
+  if (txnId) {
+    const txn = acc.txns.find(t => t.id === txnId);
+    title.textContent = "Edit Transaction";
+    document.getElementById("ccodTxnAmount").value      = txn.amount ?? "";
+    document.getElementById("ccodTxnRate").value        = txn.ratePct ?? (acc ? acc.rate : "");
+    document.getElementById("ccodTxnDateDisb").value    = txn.dateDisb ?? defDate;
+    document.getElementById("ccodTxnDateClosed").value  = txn.dateClosed ?? "";
+    document.getElementById("ccodTxnPurpose").value     = txn.purpose ?? "";
+    ccodSetTxnType(txn.type || "debit");
+    delBtn.style.display = "";
+  } else {
+    title.textContent = "Add Transaction";
+    document.getElementById("ccodTxnAmount").value     = "";
+    document.getElementById("ccodTxnRate").value       = acc ? (acc.rate || "") : "";
+    document.getElementById("ccodTxnDateDisb").value   = defDate;
+    document.getElementById("ccodTxnDateClosed").value = "";
+    document.getElementById("ccodTxnPurpose").value    = "";
+    ccodSetTxnType("debit");
+    delBtn.style.display = "none";
+  }
+
+  ccodRecalcTxnPreview();
+  modal.classList.add("open");
+};
+
+window.ccodCloseTxnModal = function() {
+  document.getElementById("ccodTxnModal").classList.remove("open");
+};
+
+window.ccodRecalcTxnPreview = function() {
+  const type      = document.getElementById("ccodTxnType").value;
+  const amount    = Number(document.getElementById("ccodTxnAmount").value) || 0;
+  const rate      = Number(document.getElementById("ccodTxnRate").value) || 0;
+  const dateDisb  = document.getElementById("ccodTxnDateDisb").value;
+  const dateClosed = document.getElementById("ccodTxnDateClosed").value;
+
+  const perDay = ccodPerDay(rate);
+  document.getElementById("ccodPreviewPerDay").textContent = (perDay*100).toFixed(4) + "%";
+
+  if (type !== "debit" || !dateDisb) {
+    document.getElementById("ccodPreviewDays").textContent = "—";
+    document.getElementById("ccodPreviewInterest").textContent = "₹0";
+    return;
+  }
+  const start = new Date(dateDisb);
+  const end   = dateClosed ? new Date(dateClosed) : new Date();
+  const days  = ccodDays(start, end);
+  const interest = amount * perDay * days;
+
+  document.getElementById("ccodPreviewDays").textContent = days + (dateClosed ? "" : " (running)");
+  document.getElementById("ccodPreviewInterest").textContent = ccodFmt(interest);
+};
+
+window.ccodSaveTxn = async function() {
+  const accId    = document.getElementById("ccodTxnAccId").value;
+  const txnId    = document.getElementById("ccodTxnId").value;
+  const type     = document.getElementById("ccodTxnType").value;
+  const amount   = Number(document.getElementById("ccodTxnAmount").value) || 0;
+  const ratePct  = Number(document.getElementById("ccodTxnRate").value) || 0;
+  const dateDisb = document.getElementById("ccodTxnDateDisb").value;
+  const dateClosed = document.getElementById("ccodTxnDateClosed").value || null;
+  const purpose  = document.getElementById("ccodTxnPurpose").value.trim();
+
+  if (!accId)      { alert("Missing account reference."); return; }
+  if (amount <= 0) { alert("Please enter a valid amount."); return; }
+  if (!dateDisb)   { alert("Please select the disbursed/transaction date."); return; }
+
+  const payload = { type, amount, ratePct, dateDisb, dateClosed, purpose, updatedAt: new Date().toISOString() };
+
+  try {
+    if (txnId) {
+      await setDoc(doc(ccodDB, CCOD_COL, accId, "transactions", txnId), payload, { merge: true });
+    } else {
+      payload.createdAt = new Date().toISOString();
+      await addDoc(collection(ccodDB, CCOD_COL, accId, "transactions"), payload);
+    }
+    ccodExpanded[accId] = true;
+    ccodCloseTxnModal();
+    ccodLoadAll();
+  } catch (err) {
+    alert("❌ Error saving transaction: " + err.message);
+  }
+};
+
+window.ccodDeleteTxn = async function() {
+  const accId = document.getElementById("ccodTxnAccId").value;
+  const txnId = document.getElementById("ccodTxnId").value;
+  if (!accId || !txnId) return;
+  if (!confirm("Delete this transaction? This cannot be undone.")) return;
+
+  try {
+    await deleteDoc(doc(ccodDB, CCOD_COL, accId, "transactions", txnId));
+    ccodExpanded[accId] = true;
+    ccodCloseTxnModal();
+    ccodLoadAll();
+  } catch (err) {
+    alert("❌ Error deleting transaction: " + err.message);
+  }
+};
+
+// ── WhatsApp summary sender ──────────────────────────────────────────────────
+window.ccodSendWhatsApp = function() {
+  if (ccodData.length === 0) { alert("No CC/OD accounts to send yet."); return; }
+
+  let grandLimit = 0, grandUsed = 0, grandInterest = 0;
+  let lines = [];
+
+  for (const acc of ccodData) {
+    const limit = Number(acc.limit) || 0;
+    let used = 0, interest = 0;
+    for (const txn of acc.txns) {
+      const amount = Number(txn.amount) || 0;
+      if (txn.type === "debit") used += amount; else used -= amount;
+      interest += ccodTxnInterest(txn);
+    }
+    const available = limit - used;
+    grandLimit += limit; grandUsed += used; grandInterest += interest;
+
+    lines.push(
+`*${acc.name}* (${(Number(acc.rate)||0)}% p.a.)
+  Limit: ₹${limit.toLocaleString("en-IN")}  |  Used: ₹${used.toLocaleString("en-IN")}
+  Available: ₹${available.toLocaleString("en-IN")}  |  Interest: ₹${Math.round(interest).toLocaleString("en-IN")}`
+    );
+  }
+
+  const today = new Date();
+  const dateLabel = `${String(today.getDate()).padStart(2,"0")}/${String(today.getMonth()+1).padStart(2,"0")}/${today.getFullYear()}`;
+
+  const msg =
+`💳 *CC/OD Interest & Payout Summary*
+📆 As of ${dateLabel}
+${"─".repeat(28)}
+${lines.join("\n\n")}
+${"─".repeat(28)}
+📊 *Total Limit: ₹${grandLimit.toLocaleString("en-IN")}*
+📉 *Total Utilized: ₹${grandUsed.toLocaleString("en-IN")}*
+📈 *Total Available: ₹${(grandLimit-grandUsed).toLocaleString("en-IN")}*
+💰 *Interest Accrued: ₹${Math.round(grandInterest).toLocaleString("en-IN")}*
+${"─".repeat(28)}
+_Internal Records — Rajvi Travels & Transport_`;
+
+  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank");
+};
+
+// ── Auto-load when tab opens ──────────────────────────────────────────────────
+const _origSwitchTabCCOD = window.switchTab;
+window.switchTab = function(name) {
+  _origSwitchTabCCOD(name);
+  if (name === "ccodReport") ccodLoadAll();
+};
+
+console.log("✅ CC/OD Interest & Payout module loaded");
 </script>
 
 </body>
