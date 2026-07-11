@@ -1881,7 +1881,7 @@ tbody td {
   letter-spacing: 0.04em;
 ">
   <span id="channelBannerIcon">🏙</span>
-  <span id="channelBannerText">Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click, Anateus</span>
+  <span id="channelBannerText">Viewing: SURAT CHANNEL</span>
 </div>
 
 <!-- MAIN CONTENT -->
@@ -2083,6 +2083,7 @@ tbody td {
         <p class="section-subtitle">Create new billing entries and track invoices</p>
       </div>
       <div class="section-actions">
+        <button class="btn btn-secondary" style="border-color:var(--rust);color:var(--rust);" onclick="smartAddOpen()">🧠 Smart Add</button>
         <button class="btn btn-primary" onclick="openModal('newBillModal')">+ New Bill</button>
       </div>
     </div>
@@ -3209,6 +3210,79 @@ window.driveRenderTabs = driveRenderTabs;
   </div>
 </div>
 
+<!-- SMART ADD — paste a WhatsApp message or a bill photo, review the guessed
+     fields, then it fills the real New Bill form for you to confirm. Runs
+     entirely in the browser (no backend, no API key, no ongoing cost). -->
+<div class="modal-overlay" id="smartAddModal">
+  <div class="modal" style="max-width:540px;">
+    <div class="modal-header">
+      <h2 class="modal-title">🧠 Smart Add</h2>
+      <button class="modal-close" onclick="smartAddClose()">×</button>
+    </div>
+    <div class="modal-body">
+      <div style="font-size:12px;color:var(--text-dim);margin-bottom:14px;">Upload the Indecab tax invoice PDF or the monthly statement PDF for a company — it'll read every invoice in it and total up the amount and duty count for you. A pasted WhatsApp message works too. Always review before saving.</div>
+
+      <div class="form-group">
+        <label class="form-label">Paste text (WhatsApp message, invoice text, etc.)</label>
+        <textarea class="form-textarea" id="smartAddText" rows="5" placeholder="Paste here…" style="min-height:110px;"></textarea>
+      </div>
+
+      <div class="form-group mb-0">
+        <label class="form-label">…or upload a PDF (tax invoice / statement) or a photo</label>
+        <input type="file" accept="image/*,application/pdf" class="form-input" id="smartAddImage" style="padding:8px;">
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;margin-top:14px;" onclick="smartAddExtract()" id="smartAddExtractBtn">🔍 Extract Details</button>
+
+      <div id="smartAddReview" style="display:none;margin-top:18px;">
+        <div class="divider"></div>
+        <div style="font-size:11px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin:14px 0 12px;">Review — edit anything that's wrong</div>
+
+        <div class="form-group">
+          <label class="form-label">Company Name</label>
+          <input type="text" class="form-input" id="smartAddCompany" placeholder="Enter company name">
+          <div class="form-help" id="smartAddCompanyHint"></div>
+        </div>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Month</label>
+            <select class="form-select" id="smartAddMonth">
+              <option>January</option><option>February</option><option>March</option><option>April</option>
+              <option>May</option><option>June</option><option>July</option><option>August</option>
+              <option>September</option><option>October</option><option>November</option><option>December</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Year</label>
+            <input type="number" class="form-input" id="smartAddYear" min="2020" max="2030">
+          </div>
+        </div>
+
+        <div class="form-grid form-grid-2">
+          <div class="form-group">
+            <label class="form-label">Billing Amount (₹)</label>
+            <input type="number" class="form-input" id="smartAddAmount" min="0" step="0.01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Duties</label>
+            <input type="number" class="form-input" id="smartAddDuties" min="0">
+          </div>
+        </div>
+
+        <div class="form-group mb-0">
+          <label class="form-label">Vendor Amount (₹) <span style="color:var(--text-mid);font-weight:400;">(optional)</span></label>
+          <input type="number" class="form-input" id="smartAddVendor" min="0" step="0.01">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="smartAddClose()">Cancel</button>
+      <button class="btn btn-primary" id="smartAddUseBtn" style="display:none;" onclick="smartAddUseDetails()">✅ Use These Details</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL: RECEIVE PAYMENT -->
 <div class="modal-overlay" id="receivePaymentModal">
   <div class="modal">
@@ -3825,13 +3899,13 @@ function setChannel(channel) {
       banner.style.borderBottom = '1px solid rgba(42,157,143,0.25)';
       banner.style.color = '#2A9D8F';
       bannerIcon.textContent = '🏙';
-      bannerText.textContent = 'Viewing: SURAT CHANNEL — Shivani Travels, Speedways, Shriji, Shreeji, Skil, SFI, CCI, Shri Sai Enterprises, Manage, Reliable, Pais Auto, Blossom, Surakshit, Aurafox, Click, Anateus';
+      bannerText.textContent = 'Viewing: SURAT CHANNEL';
     } else {
       banner.style.background = 'linear-gradient(90deg, rgba(197,75,44,0.12) 0%, transparent 100%)';
       banner.style.borderBottom = '1px solid rgba(197,75,44,0.25)';
       banner.style.color = 'var(--rust)';
       bannerIcon.textContent = '🌆';
-      bannerText.textContent = 'Viewing: JAMNAGAR CHANNEL — Blossom Services Jamnagar & all companies not in Surat channel';
+      bannerText.textContent = 'Viewing: JAMNAGAR CHANNEL';
     }
   }
   // Re-render all sections
@@ -5081,7 +5155,7 @@ function renderCompleted() {
     const index = AppState.completed.indexOf(record);
     return `
     <tr onclick="showCompletedDetail(${index})" style="cursor: pointer;">
-      <td><strong>${escapeHtml(record.company)}</strong></td>
+      <td><strong>${escapeHtml(record.company)}</strong>${record.notes ? ` <span title="${escapeHtml(record.notes)}" style="cursor:help;color:var(--warning);font-size:12px;">📝</span>` : ''}</td>
       <td>${escapeHtml(record.month)} ${record.year}</td>
       <td class="mono">₹${formatCurrency(record.amount)}</td>
       <td class="text-center" style="color:var(--info);font-weight:700;">${record.duties || '—'}</td>
@@ -5188,6 +5262,14 @@ function showCompletedDetail(index) {
             <span class="calc-value" style="color: var(--success);">₹${formatCurrency(p.amount)}</span>
           </div>
         `).join('')}
+      </div>
+    ` : ''}
+
+    ${record.notes ? `
+      <div class="divider"></div>
+      <div>
+        <div class="form-label">Notes</div>
+        <div style="font-size: 14px; color: var(--text-dim); line-height: 1.6; white-space: pre-wrap;">${escapeHtml(record.notes)}</div>
       </div>
     ` : ''}
 
@@ -8390,6 +8472,340 @@ window.notesDeleteNote = async function(id) {
 };
 
 console.log("✅ Team Notes module loaded");
+</script>
+
+<!-- ============================================================================
+     SMART ADD — 100% client-side, no backend, no API key, no ongoing cost.
+     Works by:
+       1. Reading pasted text directly, OR running OCR on a photo (Tesseract.js,
+          loaded on demand from a CDN — only when a photo is actually used).
+       2. Running the resulting text through keyword/pattern heuristics and
+          fuzzy-matching against every company you've billed before.
+       3. Always showing the guess in an editable review step — nothing is
+          ever saved without you confirming it, since accuracy isn't perfect.
+     ============================================================================ -->
+<script>
+let _tesseractLoadPromise = null;
+function smartAddLoadTesseract() {
+  if (window.Tesseract) return Promise.resolve();
+  if (_tesseractLoadPromise) return _tesseractLoadPromise;
+  _tesseractLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error('Could not load the OCR library — check your internet connection.'));
+    document.head.appendChild(s);
+  });
+  return _tesseractLoadPromise;
+}
+
+let _pdfjsLoadPromise = null;
+function smartAddLoadPdfJs() {
+  if (window.pdfjsLib) return Promise.resolve();
+  if (_pdfjsLoadPromise) return _pdfjsLoadPromise;
+  _pdfjsLoadPromise = new Promise((resolve, reject) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+    s.onload = () => {
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      resolve();
+    };
+    s.onerror = () => reject(new Error('Could not load the PDF reading library — check your internet connection.'));
+    document.head.appendChild(s);
+  });
+  return _pdfjsLoadPromise;
+}
+
+// Extracts all text from every page of a PDF, client-side, using the
+// PDF's own embedded text layer (these Indecab-generated PDFs are digital,
+// not scanned, so this is fast and far more accurate than OCR would be).
+async function smartAddExtractPdfText(file) {
+  await smartAddLoadPdfJs();
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map(it => it.str).join(' ') + '\n';
+  }
+  return fullText;
+}
+
+function smartAddOpen() {
+  document.getElementById('smartAddText').value = '';
+  document.getElementById('smartAddImage').value = '';
+  document.getElementById('smartAddReview').style.display = 'none';
+  document.getElementById('smartAddUseBtn').style.display = 'none';
+  const btn = document.getElementById('smartAddExtractBtn');
+  btn.disabled = false;
+  btn.textContent = '🔍 Extract Details';
+  openModal('smartAddModal');
+}
+window.smartAddOpen = smartAddOpen;
+
+function smartAddClose() {
+  closeModal('smartAddModal');
+}
+window.smartAddClose = smartAddClose;
+
+// Every company name ever billed, so pasted text can be fuzzy-matched
+// against companies you actually work with (not a generic guess).
+function smartAddKnownCompanies() {
+  const names = new Set();
+  (AppState.bills || []).forEach(b => b.company && names.add(b.company));
+  (AppState.awaiting || []).forEach(b => b.company && names.add(b.company));
+  (AppState.completed || []).forEach(c => c.company && names.add(c.company));
+  return Array.from(names);
+}
+
+const SMART_ADD_MONTHS = ["January","February","March","April","May","June",
+                          "July","August","September","October","November","December"];
+const SMART_ADD_MONTHS_SHORT = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"];
+
+function smartAddParseText(text) {
+  const result = { company: '', month: '', year: '', amount: '', duties: '', vendor: '' };
+  if (!text) return result;
+  const lower = text.toLowerCase();
+
+  // Company — longest known company name found anywhere in the text
+  let bestMatch = '';
+  for (const name of smartAddKnownCompanies()) {
+    if (name && lower.includes(name.toLowerCase()) && name.length > bestMatch.length) {
+      bestMatch = name;
+    }
+  }
+  result.company = bestMatch;
+
+  // Month — full or 3-letter abbreviation
+  for (let i = 0; i < SMART_ADD_MONTHS.length; i++) {
+    const full = SMART_ADD_MONTHS[i].toLowerCase();
+    const short = SMART_ADD_MONTHS_SHORT[i];
+    if (lower.includes(full) || new RegExp(`\\b${short}\\b`).test(lower)) {
+      result.month = SMART_ADD_MONTHS[i];
+      break;
+    }
+  }
+
+  // Year — any standalone 20xx number
+  const yearMatch = text.match(/\b20\d{2}\b/);
+  if (yearMatch) result.year = yearMatch[0];
+
+  function numberAfterKeyword(keywords) {
+    for (const kw of keywords) {
+      const re = new RegExp(kw + '\\s*[:\\-]?\\s*(?:rs\\.?|inr|₹)?\\s*([\\d,]+(?:\\.\\d+)?)', 'i');
+      const m = text.match(re);
+      if (m) {
+        const num = parseFloat(m[1].replace(/,/g, ''));
+        if (!isNaN(num)) return num;
+      }
+    }
+    return null;
+  }
+
+  // Amount — prefer an explicitly-labelled total, else the largest ₹ figure
+  let amount = numberAfterKeyword(['billing amount', 'total amount', 'total billing', 'amount']);
+  if (amount === null) {
+    const allAmounts = [...text.matchAll(/(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d+)?)/gi)]
+      .map(m => parseFloat(m[1].replace(/,/g, '')))
+      .filter(n => !isNaN(n));
+    if (allAmounts.length > 0) amount = Math.max(...allAmounts);
+  }
+  if (amount !== null) result.amount = amount;
+
+  const duties = numberAfterKeyword(['total duty', 'total duties', 'no of duty', "no\\. of duty", 'duties', 'duty', 'trips']);
+  if (duties !== null) result.duties = Math.round(duties);
+
+  const vendor = numberAfterKeyword(['vendor amount', 'vendor']);
+  if (vendor !== null) result.vendor = vendor;
+
+  return result;
+}
+
+// Specialized parser tuned to the two Indecab PDF formats Rajvi actually
+// downloads and works with:
+//   (a) Tax invoice PDF(s) — one or more "TAX INVOICE" blocks, each ending in
+//       a "TOTAL ₹X" grand total, with individual duty rows like "#20783202-1".
+//   (b) Monthly statement PDF — one big table of bookings addressed "To,
+//       <Company>", ending in a "Totals" row whose last column is the grand
+//       total amount, with each row keyed by an "RT2627-XXXXXX" invoice number.
+// Returns null for anything it can't confidently read, so the caller can
+// fall back to the generic keyword parser.
+function smartAddParseInvoiceOrStatement(text) {
+  const result = { company: '', month: '', year: '', amount: null, duties: null };
+  if (!text) return result;
+
+  const isStatement = /statement date|statement period/i.test(text);
+  const hasTaxInvoice = /tax invoice/i.test(text);
+
+  // ---- Company name ----
+  // Prefer matching against every company already billed before — far more
+  // reliable than trying to guess position from PDF text layout.
+  let bestMatch = '';
+  for (const name of smartAddKnownCompanies()) {
+    if (name && text.toLowerCase().includes(name.toLowerCase()) && name.length > bestMatch.length) {
+      bestMatch = name;
+    }
+  }
+  if (bestMatch) {
+    result.company = bestMatch;
+  } else if (isStatement) {
+    const m = text.match(/To,\s*\n?\s*([A-Za-z0-9&.,'()\- ]{3,60})/);
+    if (m) result.company = m[1].trim();
+  } else if (hasTaxInvoice) {
+    const m = text.match(/([A-Z][A-Za-z&.,' ]{2,45}?(?:Pvt\.?\s*Ltd\.?|Private Limited|Rentals?|Cabs?|Transport|Enterprises|Services))/);
+    if (m && !/rajvi/i.test(m[1])) result.company = m[1].trim();
+  }
+
+  // ---- Amount + Duties ----
+  if (isStatement) {
+    // The "Totals" row: several numbers in a row, the LAST one is the
+    // Total Amount column (rightmost in the table).
+    const totalsMatch = text.match(/Totals?\s+([\d,\.\s]{10,150})/i);
+    if (totalsMatch) {
+      const nums = totalsMatch[1].match(/[\d,]+(?:\.\d+)?/g);
+      if (nums && nums.length) {
+        const last = parseFloat(nums[nums.length - 1].replace(/,/g, ''));
+        if (!isNaN(last)) result.amount = last;
+      }
+    }
+    const invoiceMatches = text.match(/RT\d{3,5}-\d{4,8}/g);
+    if (invoiceMatches) result.duties = new Set(invoiceMatches).size;
+  } else if (hasTaxInvoice) {
+    // Sum every invoice's own grand total ("TOTAL ₹X"), one per invoice —
+    // this is what makes multi-invoice PDFs (like a month of Pais Auto
+    // invoices in one file) add up correctly.
+    const totalMatches = [...text.matchAll(/\bTOTAL\s*₹\s*([\d,]+(?:\.\d+)?)/gi)];
+    if (totalMatches.length) {
+      result.amount = totalMatches.reduce((sum, m) => sum + parseFloat(m[1].replace(/,/g, '')), 0);
+    }
+    // Duties = individual duty-id rows (e.g. "#20783202-1"); falls back to
+    // counting invoice numbers if no duty-id pattern is found.
+    const dutyMatches = text.match(/#\d{5,}-\d+/g);
+    if (dutyMatches) {
+      result.duties = new Set(dutyMatches).size;
+    } else {
+      const invNums = text.match(/Invoice Number:\s*\S+/gi);
+      if (invNums) result.duties = invNums.length;
+    }
+  }
+
+  // ---- Month / Year: the most common month among every full date found ----
+  const dateMatches = [...text.matchAll(/\b(\d{2})[-\/](\d{2})[-\/](20\d{2})\b/g)];
+  if (dateMatches.length) {
+    const monthCounts = {};
+    dateMatches.forEach(m => {
+      const mm = parseInt(m[2], 10);
+      const yyyy = m[3];
+      if (mm >= 1 && mm <= 12) {
+        const key = `${mm}-${yyyy}`;
+        monthCounts[key] = (monthCounts[key] || 0) + 1;
+      }
+    });
+    const keys = Object.keys(monthCounts);
+    if (keys.length) {
+      const topKey = keys.sort((a, b) => monthCounts[b] - monthCounts[a])[0];
+      const [mm, yyyy] = topKey.split('-');
+      result.month = SMART_ADD_MONTHS[parseInt(mm, 10) - 1];
+      result.year = yyyy;
+    }
+  }
+
+  return result;
+}
+
+async function smartAddExtract() {
+  const btn = document.getElementById('smartAddExtractBtn');
+  const fileInput = document.getElementById('smartAddImage');
+  const textInput = document.getElementById('smartAddText');
+  let text = textInput.value.trim();
+
+  const file = fileInput.files && fileInput.files[0];
+  if (file) {
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name || '');
+    btn.disabled = true;
+    btn.textContent = isPdf ? '⏳ Reading PDF…' : '⏳ Reading image (10–20s)…';
+    try {
+      if (isPdf) {
+        const pdfText = await smartAddExtractPdfText(file);
+        text = (text ? text + '\n' : '') + pdfText;
+        if (pdfText.trim().length < 50) {
+          showToast("This PDF doesn't seem to have readable text (maybe it's a scanned image) — results may be incomplete", 'warning');
+        }
+      } else {
+        await smartAddLoadTesseract();
+        const { data } = await window.Tesseract.recognize(file, 'eng');
+        text = (text ? text + '\n' : '') + (data.text || '');
+      }
+    } catch (err) {
+      showToast('Could not read the file: ' + err.message, 'error');
+      btn.disabled = false;
+      btn.textContent = '🔍 Extract Details';
+      return;
+    }
+  }
+
+  if (!text.trim()) {
+    showToast('Paste some text or choose a file first', 'warning');
+    btn.disabled = false;
+    btn.textContent = '🔍 Extract Details';
+    return;
+  }
+
+  // Try the specialized Rajvi/Indecab invoice-and-statement reader first,
+  // then fill in anything it missed using the generic keyword parser.
+  const special = smartAddParseInvoiceOrStatement(text);
+  const generic = smartAddParseText(text);
+  const parsed = {
+    company: special.company || generic.company,
+    month:   special.month   || generic.month,
+    year:    special.year    || generic.year,
+    amount:  (special.amount !== null && special.amount !== undefined) ? special.amount : generic.amount,
+    duties:  (special.duties !== null && special.duties !== undefined) ? special.duties : generic.duties,
+    vendor:  generic.vendor
+  };
+
+  document.getElementById('smartAddCompany').value = parsed.company;
+  document.getElementById('smartAddCompanyHint').textContent = parsed.company
+    ? "Matched a company you've billed before — check it's the right one."
+    : "Couldn't confidently match a company — please type it in.";
+  document.getElementById('smartAddMonth').value = parsed.month || SMART_ADD_MONTHS[new Date().getMonth()];
+  document.getElementById('smartAddYear').value = parsed.year || new Date().getFullYear();
+  document.getElementById('smartAddAmount').value = parsed.amount || '';
+  document.getElementById('smartAddDuties').value = parsed.duties || '';
+  document.getElementById('smartAddVendor').value = parsed.vendor || '';
+
+  // Stash the raw source text so "Use These Details" can drop a trimmed
+  // reference into Notes (full PDFs are long, so cap it there — see below).
+  document.getElementById('smartAddReview').dataset.rawText = text;
+
+  document.getElementById('smartAddReview').style.display = 'block';
+  document.getElementById('smartAddUseBtn').style.display = '';
+  btn.disabled = false;
+  btn.textContent = '🔄 Re-Extract';
+}
+window.smartAddExtract = smartAddExtract;
+
+function smartAddUseDetails() {
+  document.getElementById('billCompany').value      = document.getElementById('smartAddCompany').value.trim();
+  document.getElementById('billMonth').value         = document.getElementById('smartAddMonth').value;
+  document.getElementById('billYear').value          = document.getElementById('smartAddYear').value;
+  document.getElementById('billAmount').value        = document.getElementById('smartAddAmount').value;
+  document.getElementById('billDuties').value        = document.getElementById('smartAddDuties').value;
+  document.getElementById('billVendorAmount').value  = document.getElementById('smartAddVendor').value;
+
+  const rawText = (document.getElementById('smartAddReview').dataset.rawText || '').trim();
+  document.getElementById('billNotes').value = rawText
+    ? `[Smart Add — auto-filled, please verify]\n${rawText.slice(0, 600)}`
+    : '';
+
+  smartAddClose();
+  openModal('newBillModal');
+  showToast('Details filled in — please check everything before saving', 'info');
+}
+window.smartAddUseDetails = smartAddUseDetails;
+
+console.log("✅ Smart Add module loaded");
 </script>
 
 </body>
