@@ -3786,12 +3786,43 @@ function handleLogin() {
     });
 }
 
+// ============================================================================
+// ROLE-BASED UI RESTRICTIONS — limited staff logins
+// ============================================================================
+// Map of restricted-employee email -> array of nav-tab "data-section" values
+// they are allowed to see. Any email NOT listed here gets full access
+// (i.e. this only ever removes access, never grants extra access).
+const EMPLOYEE_TAB_ACCESS = {
+  'prem@rajvitravelsandtransport.com': ['partners', 'bills', 'awaiting', 'completed', 'mail']
+};
+
+function applyRoleRestrictions(email) {
+  const allowed = EMPLOYEE_TAB_ACCESS[(email || '').toLowerCase()];
+  if (!allowed) return; // unrestricted user (you) — show everything as-is
+
+  // Hide every nav tab that isn't in the allowed list
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    const section = tab.getAttribute('data-section');
+    if (!allowed.includes(section)) tab.style.display = 'none';
+  });
+
+  // Hide the alarm bell (payment reminders) and Team Notes buttons
+  const bellBtn  = document.getElementById('bellBtn');
+  const notesBtn = document.getElementById('notesBtn');
+  if (bellBtn)  bellBtn.style.display  = 'none';
+  if (notesBtn) notesBtn.style.display = 'none';
+
+  // Land on the first allowed tab instead of whatever was active
+  if (typeof switchTab === 'function') switchTab(allowed[0]);
+}
+
 // Watch auth state — boots app if already signed in (persists across refresh)
 onAuthStateChanged(auth, user => {
   if (user) {
     document.getElementById('loginOverlay').classList.add('hidden');
     if (typeof init === 'function') init();
     else window._autoInit = true;
+    applyRoleRestrictions(user.email);
   } else {
     document.getElementById('loginOverlay').classList.remove('hidden');
     window._autoInit = false;
@@ -5721,6 +5752,8 @@ window.copyEmail = copyEmail;
 async function saveData() {
   try {
     // Only persist the data fields — strip runtime UI state
+    // NOTE: driveLinks is saved separately to portal/restricted (see below) so
+    // it can be locked out at the Firestore rules level for restricted logins.
     const dataToSave = {
       partners:                AppState.partners,
       fixedLists:              AppState.fixedLists || {},
@@ -5730,20 +5763,36 @@ async function saveData() {
       extraSuratCompanies:     AppState.extraSuratCompanies     || [],
       jamnagarExceptions:      AppState.jamnagarExceptions      || [],
       awaitingChannelOverrides: AppState.awaitingChannelOverrides || {},
-      driveLinks:              AppState.driveLinks              || []
+      driveLinks:              AppState.driveLinks              || [] // kept in local cache for speed
     };
 
     // Save to localStorage
     localStorage.setItem('rajvi_portal_data', JSON.stringify(dataToSave));
     
-    // Save to Firebase
+    // Save to Firebase — main shared doc (no driveLinks here)
+    const { driveLinks: _driveLinksOnly, ...mainDataToSave } = dataToSave;
     await firebaseUtils.setDoc(
       firebaseUtils.doc(db, 'portal', 'main'),
       {
-        ...dataToSave,
+        ...mainDataToSave,
         lastUpdated: firebaseUtils.serverTimestamp()
       }
     );
+
+    // Save Drive links to their own restricted doc. If this write is denied
+    // (e.g. a restricted login without Drive access), fail silently — the
+    // main save above has already succeeded.
+    try {
+      await firebaseUtils.setDoc(
+        firebaseUtils.doc(db, 'portal', 'restricted'),
+        {
+          driveLinks: AppState.driveLinks || [],
+          lastUpdated: firebaseUtils.serverTimestamp()
+        }
+      );
+    } catch (driveErr) {
+      console.warn('Drive links not saved to Firebase (likely a permissions restriction):', driveErr.code || driveErr);
+    }
     
     updateSyncStatus('synced');
     return true;
@@ -5772,7 +5821,6 @@ async function loadData() {
       AppState.extraSuratCompanies = data.extraSuratCompanies || [];
       AppState.jamnagarExceptions = data.jamnagarExceptions || [];
       AppState.awaitingChannelOverrides = data.awaitingChannelOverrides || {};
-      AppState.driveLinks = data.driveLinks || [];
       console.log('✅ Data loaded from Firebase');
     } else {
       // Fallback to localStorage
@@ -5787,9 +5835,20 @@ async function loadData() {
         AppState.extraSuratCompanies = parsed.extraSuratCompanies || [];
         AppState.jamnagarExceptions = parsed.jamnagarExceptions || [];
         AppState.awaitingChannelOverrides = parsed.awaitingChannelOverrides || {};
-        AppState.driveLinks = parsed.driveLinks || [];
         console.log('✅ Data loaded from localStorage');
       }
+    }
+
+    // Load Drive links from their own restricted doc. Restricted logins
+    // (e.g. Prem) will get a permission-denied here — that's expected and
+    // just means their Drive tab stays empty, which is fine since it's
+    // hidden from them in the UI anyway.
+    try {
+      const restrictedSnap = await firebaseUtils.getDoc(firebaseUtils.doc(db, 'portal', 'restricted'));
+      AppState.driveLinks = restrictedSnap.exists() ? (restrictedSnap.data().driveLinks || []) : [];
+    } catch (driveErr) {
+      AppState.driveLinks = [];
+      console.warn('Drive links not loaded (likely a permissions restriction):', driveErr.code || driveErr);
     }
     
     // Rebuild Drive tabs: built-in defaults + any custom links loaded from Firebase/localStorage
